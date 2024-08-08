@@ -1,0 +1,32 @@
+{
+    "type": [
+      "whisper",
+      "faster_whisper"
+    ],
+    "language": [
+      "auto",
+      "Chinese",
+      "mandarin",
+      "English",
+      "Russian",
+      "French",
+      "German",
+      "Cantonese",
+      "Japanese"
+    ],
+    "task": [
+      "transcribe",
+      "translate"
+    ],
+    "model": [
+      "tiny",
+      "base",
+      "small",
+      "medium",
+      "large"
+    ],
+    "device": [
+      "cpu",
+      "cuda"
+    ]
+}
