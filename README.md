@@ -2,7 +2,8 @@
 
 #### 介绍
 语音识别项目
-语音识别的open-webui
+
+音频转字幕文件或txt文件
 
 #### 软件架构
 基于faster_whisper和whisper
