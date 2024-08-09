@@ -1,18 +1,18 @@
 {
+  "model_url": "默认",
   "type": [
     "whisper",
     "faster_whisper"
   ],
   "language": [
     "auto",
-    "Chinese",
-    "mandarin",
-    "English",
-    "Russian",
-    "French",
-    "German",
-    "Cantonese",
-    "Japanese"
+    "zh",
+    "en",
+    "ru",
+    "fr",
+    "de",
+    "ko",
+    "ja"
   ],
   "task": [
     "transcribe",

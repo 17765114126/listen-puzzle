@@ -1,3 +1,8 @@
 faster_whisper==1.0.1
 gradio==4.40.0
 openai_whisper==20231117
+numpy<2
+requests==2.32.3
+sounddevice==0.4.7
+speech==0.5.2
+

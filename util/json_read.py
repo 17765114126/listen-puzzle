@@ -37,7 +37,7 @@ def read_config(*keys):
     current_dir = os.path.dirname(current_file_path)
     project_root = os.path.dirname(current_dir)
     json_path = os.path.join(project_root, 'config.json')
-    with open(json_path, 'r') as file:
+    with open(json_path, 'r', encoding='utf-8', errors='ignore') as file:
         data = json.load(file)
     return get_value(data, keys)
 
