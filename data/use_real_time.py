@@ -5,7 +5,7 @@ import time
 from faster_whisper import WhisperModel
 import requests
 import os
-import speech
+import pyttsX
 
 # API URL
 API_URL = "http://your-api-url.com/api"
@@ -14,7 +14,7 @@ API_URL = "http://your-api-url.com/api"
 SAMPLE_RATE = 16000
 CHANNELS = 1
 DURATION = 1  # 持续时间
-model_path = "D:\\opt\\faster-whisper\\" + "base"
+model_path = "C:\\Users\\1\\.cache\\modelscope\\hub\\pengzhendong\\faster-whisper" + "-medium"
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
@@ -22,11 +22,7 @@ os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 model = WhisperModel(model_path, device="cpu", compute_type="int8")
 
 
-def say(text):
-    speech.say(text)
-
-
-def recording_transcription(duration):
+def recording_transcription(duration, language_type):
     # 识别结果
     recognized_text = ""
     # 录音
@@ -37,7 +33,7 @@ def recording_transcription(duration):
     audio_data = np.frombuffer(recording, dtype=np.float32).flatten()
 
     # 语音识别
-    segments, info = model.transcribe(audio_data, beam_size=5)
+    segments, info = model.transcribe(audio_data, beam_size=5, language=language_type)
     for segment in segments:
         recognized_text += segment.text + " "
     return recognized_text
@@ -46,14 +42,16 @@ def recording_transcription(duration):
 def listen_for_audio():
     while True:
         # 录音1秒
-        recognized_text = recording_transcription(1)
+        recognized_text = recording_transcription(2, "zh")
+        print(recognized_text)
         # 检查是否识别到了关键词
-        if "卡拉" in recognized_text:
+        if "小C" in recognized_text:
             # 生成音频并播放
-            say("我在")
-
+            pyttsX.speak("我在,你说")
+            print("我在")
             # 开始监听5秒 获得语音转录文字
-            recognized_text = recording_transcription(5)
+            recognized_text = recording_transcription(5, None)
+            print(recognized_text)
             # 调用API
             call_api(recognized_text)
 
@@ -74,7 +72,7 @@ def main():
 
     try:
         while True:
-            time.sleep(0.2)  # 减少CPU占用
+            time.sleep(0.1)  # 减少CPU占用
     except KeyboardInterrupt:
         print("Exiting...")
 
