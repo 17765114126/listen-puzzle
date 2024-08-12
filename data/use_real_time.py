@@ -1,20 +1,14 @@
 import sounddevice as sd
 import numpy as np
-import threading
-import time
 from faster_whisper import WhisperModel
-import requests
 import os
-import pyttsX
-
-# API URL
-API_URL = "http://your-api-url.com/api"
 
 # 麦克风录音参数
 SAMPLE_RATE = 16000
 CHANNELS = 1
 DURATION = 1  # 持续时间
-model_path = "C:\\Users\\1\\.cache\\modelscope\\hub\\pengzhendong\\faster-whisper" + "-medium"
+# 模型路径 在windows下的缓存路径内
+model_path = os.environ['LOCALAPPDATA'] + ".cache\\modelscope\\hub\\pengzhendong\\faster-whisper" + "-" + "medium"
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
@@ -63,49 +57,12 @@ def transcription(audio_data, language_type):
     return recognized_text
 
 
-def listen_for_audio():
+def listen_for_audio(bool):
     while True:
         # 录音1秒
         audio_data = recording(1)
         # 判断是否有人声
-        if(speak(audio_data)):
+        if (speak(audio_data)):
+            # 识别
             recognized_text = transcription(audio_data, "zh")
             print(recognized_text)
-            # 检查是否识别到了关键词
-            if "小C" in recognized_text:
-                # 生成音频并播放
-                pyttsX.speak("我在,你说")
-                print("我在")
-                # 开始监听5秒 获得语音转录文字
-
-                audio_data = recording(5)
-                if (speak(audio_data)):
-                    recognized_text = transcription(audio_data, None)
-                    print(recognized_text)
-                    # 调用API
-                    call_api(recognized_text)
-
-
-def call_api(recognized_text):
-    # 发送POST请求
-    response = requests.post(API_URL, data={"text": recognized_text})
-    if response.status_code == 200:
-        print("API call successful.")
-    else:
-        print(f"API call failed with status code {response.status_code}.")
-
-
-def main():
-    # 启动监听线程
-    thread = threading.Thread(target=listen_for_audio)
-    thread.start()
-
-    try:
-        while True:
-            time.sleep(0.1)  # 减少CPU占用
-    except KeyboardInterrupt:
-        print("Exiting...")
-
-
-if __name__ == "__main__":
-    main()

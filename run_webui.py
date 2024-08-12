@@ -1,5 +1,5 @@
 import gradio as gr
-from data import use_fast_whisper, use_whisper
+from data import use_fast_whisper, use_whisper, recording
 from util import util, json_read
 
 
@@ -35,7 +35,6 @@ with gr.Blocks() as whisper_open_webui:
                 language = gr.Dropdown(
                     json_read.read_config("language"),
                     value="auto", label="指定语言（若不指定默认会截取 30 秒来判断语种）")
-            # folder_input = gr.Directory(label="选择文件夹")
         with gr.Row():
             output_format = gr.Dropdown(["srt", "txt"], value="srt", label="输出文件的格式")
         with gr.Row():
@@ -48,6 +47,15 @@ with gr.Blocks() as whisper_open_webui:
         reset_button.click(util.open_folder, inputs=[], outputs=[])
     with gr.Tab("实时转录"):
         with gr.Row():
-            outputTab = gr.Textbox(lines=3, placeholder="待开发", label="待开发")
+            # outputTab = gr.Textbox(lines=3, placeholder="待开发", label="待开发")
+            recording_button = gr.Button("开始/停止录音", variant="primary")
+            state_label = gr.Label("等待开始...")
+
+            recording_button.click(
+                recording.listen_for_audio,
+                inputs=[recording_button],
+                outputs=[state_label]
+            )
+
 if __name__ == '__main__':
     whisper_open_webui.launch(share=False, server_port=9528, inbrowser=True)

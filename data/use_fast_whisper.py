@@ -3,6 +3,20 @@ import os
 from util import util
 
 
+def transcription(audio_data, language_type):
+    recognized_text = ""
+    # 模型路径 在windows下的缓存路径内
+    model_path = os.environ['LOCALAPPDATA'] + ".cache\\modelscope\\hub\\pengzhendong\\faster-whisper" + "-" + "base"
+    # 加载模型
+    model = WhisperModel(model_path, compute_type="int8")
+    # 语音识别
+    segments, info = model.transcribe(audio_data, beam_size=5, language=language_type)
+    # 识别结果
+    for segment in segments:
+        recognized_text += segment.text + " "
+    return recognized_text
+
+
 def transcribe(audio_path, device_type, model_type, task_type, language_type, output_format_type):
     os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
     if language_type == "auto":

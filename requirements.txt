@@ -4,5 +4,5 @@ openai_whisper==20231117
 numpy<2
 requests==2.32.3
 sounddevice==0.4.7
-
+modelscope
 
