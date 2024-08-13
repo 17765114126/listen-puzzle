@@ -6,7 +6,7 @@ from util import util
 def transcription(audio_data, language_type):
     recognized_text = ""
     # 模型路径 在windows下的缓存路径内
-    model_path = os.environ['LOCALAPPDATA'] + ".cache\\modelscope\\hub\\pengzhendong\\faster-whisper" + "-" + "base"
+    model_path = "C:/Users/"+os.getlogin()+"/.cache/modelscope/hub/pengzhendong/faster-whisper" + "-" + "base"
     # 加载模型
     model = WhisperModel(model_path, compute_type="int8")
     # 语音识别

@@ -8,7 +8,7 @@ SAMPLE_RATE = 16000
 CHANNELS = 1
 DURATION = 1  # 持续时间
 # 模型路径 在windows下的缓存路径内
-model_path = os.environ['LOCALAPPDATA'] + ".cache\\modelscope\\hub\\pengzhendong\\faster-whisper" + "-" + "medium"
+model_path = "C:/Users/"+os.getlogin()+"/.cache/modelscope/hub/pengzhendong/faster-whisper" + "-" + "medium"
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
