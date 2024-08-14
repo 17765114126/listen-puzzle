@@ -30,16 +30,11 @@ class AudioRecorder:
         if self.recording_thread is not None:
             self.recording_thread.join()
             print("录音已停止。")
-            # filename = 'output.wav'
             data = np.concatenate(self.frames, axis=0)
             # 转换为numpy数组
             audio_data = np.frombuffer(data, dtype=np.float32).flatten()
             recognized_text = use_fast_whisper.transcription(audio_data, None)
             print("转录文本" + recognized_text)
-            # with sf.SoundFile(filename, mode='w', samplerate=44100, channels=2) as file:
-            #     file.write(data)
-            # print(f"录音已保存到 {filename}")
-
 
 # 创建录音器实例
 recorder = AudioRecorder()

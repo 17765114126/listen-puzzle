@@ -4,6 +4,7 @@ from util import util
 
 
 def transcription(audio_data, language_type):
+    os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
     recognized_text = ""
     # 模型路径 在windows下的缓存路径内
     model_path = "C:/Users/" + os.getlogin() + "/.cache/modelscope/hub/pengzhendong/faster-whisper" + "-" + "base"
