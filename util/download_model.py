@@ -12,10 +12,3 @@ def download_model(model_name):
     # model_dir = snapshot_download('pengzhendong/faster-whisper-small')
     # model_dir = snapshot_download('pengzhendong/faster-whisper-medium')
     # model_dir = snapshot_download('pengzhendong/faster-whisper-large-v3')
-
-
-import os
-
-if __name__ == '__main__':
-    print(os.environ['LOCALAPPDATA'])
-    print(os.getlogin())
