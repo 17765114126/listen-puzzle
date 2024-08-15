@@ -36,6 +36,7 @@ class AudioRecorder:
             recognized_text = use_fast_whisper.transcription(audio_data, None)
             print("转录文本" + recognized_text)
 
+
 # 创建录音器实例
 recorder = AudioRecorder()
 

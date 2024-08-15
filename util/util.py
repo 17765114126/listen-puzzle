@@ -11,6 +11,18 @@ def open_folder():
     subprocess.run(['explorer', download_path])
 
 
+def check_folder(target_file):
+    # 分离文件路径和文件名
+    folder_path, _ = os.path.split(target_file)
+    # 检查文件夹是否存在,不存在返回False
+    if not os.path.exists(folder_path):
+        return False
+    # 检查目标文件是否存在,不存在返回False
+    if not os.path.exists(target_file):
+        return False
+    return True
+
+
 # 保存转录结果为SRT文件
 def out_srt_file(segments, output_srt_file):
     with open(output_srt_file, "w", encoding="utf-8") as srt_file:

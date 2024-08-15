@@ -1,6 +1,7 @@
 from faster_whisper import WhisperModel
 import os
-from util import util
+from util import util, download_model
+import numpy as np
 
 
 def transcription(audio_data, language_type):
@@ -16,6 +17,13 @@ def transcription(audio_data, language_type):
     for segment in segments:
         recognized_text += segment.text + " "
     return recognized_text
+
+
+if __name__ == '__main__':
+    model = "tiny"
+    model_path = "C:/Users/" + os.getlogin() + "/.cache/modelscope/hub/pengzhendong/faster-whisper" + "-" + model
+    if not util.check_folder(os.path.join(model_path, "model.bin")):
+        download_model.download_model(model)
 
 
 def transcribe(audio_path, device_type, model_type, task_type, language_type, output_format_type):
