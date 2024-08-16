@@ -6,6 +6,7 @@ import subprocess
 def download_model(model_name):
     # faster-whisper模型下载
     cmd = f"modelscope download --model pengzhendong/faster-whisper-{model_name}"
+    # 尝试使用 UTF-8 编码，并忽略解码错误
     # 不捕获输出，让命令在新的控制台窗口中执行
     subprocess.Popen(cmd, shell=True)
     # 返回下载成功的消息

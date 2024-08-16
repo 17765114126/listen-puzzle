@@ -1,6 +1,6 @@
 import whisper
 import os
-from util import util
+from util import file_util
 import pyaudio
 import wave
 import numpy as np
@@ -49,7 +49,7 @@ def transcribe(audio_path, device_type, model_type, task_type, language_type, ou
             txt_file.write(result["text"])
     # 保存转录结果为SRT文件
     if output_format_type == "srt":
-        util.out_srt_file(result["segments"], new_audio_path)
+        file_util.out_srt_file(result["segments"], new_audio_path)
     return f"执行成功：文本为：\n" + result["text"]
 
 

@@ -1,6 +1,6 @@
 import gradio as gr
 from data import use_fast_whisper, recording
-from util import util, json_read
+from util import file_util, json_read
 
 # def set_function(selected_type,file_input, device, model, task, language, output_format):
 #     try:
@@ -41,7 +41,7 @@ with gr.Blocks() as whisper_open_webui:
             output = gr.Textbox(lines=3, placeholder="", label="运行状态")
             excel_button.click(use_fast_whisper.transcribe, inputs=[file_input, device, model, task, language,
                                                                     output_format], outputs=output)
-        reset_button.click(util.open_folder, inputs=[], outputs=[])
+        reset_button.click(file_util.open_folder, inputs=[], outputs=[])
     with gr.Tab("实时转录"):
         with gr.Row():
             # outputTab = gr.Textbox(lines=3, placeholder="待开发", label="待开发")

@@ -1,6 +1,6 @@
 from faster_whisper import WhisperModel
 import os
-from util import util, download_model
+from util import file_util, download_model
 import numpy as np
 
 
@@ -19,20 +19,16 @@ def transcription(audio_data, language_type):
     return recognized_text
 
 
-if __name__ == '__main__':
-    model = "tiny"
-    model_path = "C:/Users/" + os.getlogin() + "/.cache/modelscope/hub/pengzhendong/faster-whisper" + "-" + model
-    if not util.check_folder(os.path.join(model_path, "model.bin")):
-        download_model.download_model(model)
-
-
 def transcribe(audio_path, device_type, model_type, task_type, language_type, output_format_type):
     os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
     if language_type == "auto":
         language_type = None
     # 指定模型文件的路径
-    model_path = "D:\\opt\\faster-whisper\\" + model_type
-    print(model_path)
+    # model_path = "D:\\opt\\faster-whisper\\" + model_type
+    model_path = "C:/Users/" + os.getlogin() + "/.cache/modelscope/hub/pengzhendong/faster-whisper" + "-" + model_type
+    if not file_util.check_folder(os.path.join(model_path, "model.bin")):
+        download_model.download_model(model_type)
+        return f"正在下载模型{model_path}，请下载完毕后重试(可在控制台查看下载进度)"
     # model_path = "base"
     # 加载模型
     model = WhisperModel(model_path, device=device_type, compute_type="int8")
@@ -63,7 +59,7 @@ def transcribe(audio_path, device_type, model_type, task_type, language_type, ou
             txt_file.write(segments_txt)
     # 保存转录结果为SRT文件
     if output_format_type == "srt":
-        util.segments_to_srt(segments, new_audio_path)
+        file_util.segments_to_srt(segments, new_audio_path)
     return f"执行成功\n"
 
 
