@@ -1,5 +1,5 @@
 import gradio as gr
-from data import use_fast_whisper, recording
+from data import use_fast_whisper, recording, video_downloader
 from util import file_util, json_read
 
 # def set_function(selected_type,file_input, device, model, task, language, output_format):
@@ -14,6 +14,21 @@ from util import file_util, json_read
 
 # 创建gradio页面
 with gr.Blocks() as whisper_open_webui:
+    with gr.Tab("视频下载"):
+        with gr.Row():
+            video_url = gr.Textbox(lines=3, placeholder="请输入Youtube或Bilibili的视频、播放列表或频道的URL",
+                                   label="视频URL")
+            resolution = gr.Dropdown(json_read.read_config("resolution"), value="1080p", label="分辨率")
+            # folder_path = gr.FileExplorer(label="选择输出文件夹", interactive=True, root_dir="\\")
+            folder_path = gr.Textbox(lines=3, placeholder="默认下载文件夹",
+                                     label="输出文件夹")
+        with gr.Row():
+            video_run = gr.Button(value="运行", variant="primary")
+        with gr.Row():
+            video_output = gr.Textbox(lines=3, placeholder="", label="运行状态")
+            video_run.click(video_downloader.download_from_url, inputs=[video_url, folder_path, resolution],
+                            outputs=video_output)
+
     with gr.Tab("音视频转录"):
         with gr.Row():
             # 文件上传组件
@@ -42,6 +57,7 @@ with gr.Blocks() as whisper_open_webui:
             excel_button.click(use_fast_whisper.transcribe, inputs=[file_input, device, model, task, language,
                                                                     output_format], outputs=output)
         reset_button.click(file_util.open_folder, inputs=[], outputs=[])
+
     with gr.Tab("实时转录"):
         with gr.Row():
             # outputTab = gr.Textbox(lines=3, placeholder="待开发", label="待开发")
@@ -54,5 +70,5 @@ with gr.Blocks() as whisper_open_webui:
                 outputs=[state_label]
             )
 
-if __name__ == '__main__':
-    whisper_open_webui.launch(share=False, server_port=9528, inbrowser=True)
+    if __name__ == '__main__':
+        whisper_open_webui.launch(share=False, server_port=9528, inbrowser=True)

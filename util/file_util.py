@@ -1,5 +1,25 @@
 import os
 import subprocess
+import re
+
+
+def sanitize_title(title):
+    # Only keep numbers, letters, Chinese characters, and spaces
+    title = re.sub(r'[^\w\u4e00-\u9fff \d_-]', '', title)
+    # Replace multiple spaces with a single space
+    title = re.sub(r'\s+', ' ', title)
+    return title
+
+
+# 获取下载文件夹地址
+def get_download_folder():
+    if os.name == 'nt':  # Windows系统
+        download_folder = os.path.join(os.getenv('USERPROFILE'), 'Downloads')
+    elif os.name == 'posix':  # macOS和Linux系统
+        download_folder = os.path.join(os.path.expanduser('~'), 'Downloads')
+    else:
+        raise OSError("Unsupported operating system")
+    return download_folder
 
 
 # 打开文件夹
