@@ -1,5 +1,6 @@
 import ffmpeg
 import os
+import subprocess
 
 
 # 获取视频信息
@@ -95,7 +96,7 @@ def change_format(input_video_path, output_video_path, output_format):
 
 
 # 添加字幕(暂不能用，)
-#ffmpeg中字幕处理的滤镜有两个subtitles和drawtext。
+# ffmpeg中字幕处理的滤镜有两个subtitles和drawtext。
 # 1、要想正确使用subtitles滤镜，编译ffmpeg时需要添加--enable-libass --enable-filter=subtitles配置参数，同时引入libass库。同时由于libass库又引用了freetype,fribidi外部库所以还需要同时编译这两个库，此外
 # libass库根据操作系统的不同还引入不同的外部库，比如mac os系统则引入了CoreText.framework库,Linux则引入了fontconfig库，windows系统则引入了DirectWrite，或者添加--disable-require-system-font-provider
 # 代表不使用这些系统的库
@@ -107,15 +108,34 @@ def change_format(input_video_path, output_video_path, output_format):
 # 3、freetype：用于将字符串按照前面指定的字体以及字体形状渲染为字体图像(RGB格式，备注：它还可以将RGB格式最终输出为PNG，则需要编译libpng库)
 
 def add_subtitle(input_video_path, input_subtitle_path, output_video):
-    # 加载视频文件
-    input_stream = ffmpeg.input(input_video_path)
-    # 直接在output中指定字幕文件
-    # output_stream = ffmpeg.output(input_stream, output_video, subtitles=input_subtitle_path)
+    input_video_path = r"D:/abm.mp4"  # 使用原始字符串避免转义问题
+    input_subtitle_path = r"D:/jgl.srt"
+    output_video = r"D:/output.mp4"
+    # 使用 ffmpeg 添加字幕，并指定字幕样式
+    subtitle_filter = f'subtitles="{input_subtitle_path}"'
 
-    output_stream = ffmpeg.output(input_stream, output_video,
-                                  '-vf', f'subtitles={input_subtitle_path}:force_style=Fontsize=24')
-    # 运行ffmpeg命令
-    ffmpeg.run(output_stream)
+    # 构建 ffmpeg 命令
+    command = [
+        'ffmpeg',
+        '-y',  # 自动覆盖输出文件
+        '-i', input_video_path,
+        '-vf',
+        f'{subtitle_filter}',
+        # f'{subtitle_filter}:force_style="FontName=Arial; FontSize=24; PrimaryColour=&H00FFFFFF; BackColour=&H00000000; OutlineColour=&H00000000; Outline=2"',
+        '-c:v', 'libx264',  # 使用 x264 编解码器重新编码视频
+        '-threads', '2',  # 使用多线程加速处理
+        output_video
+    ]
+
+    # 执行命令
+    process = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+    # 检查命令是否执行成功
+    if process.returncode != 0:
+        print("Error:", process.stderr)
+    else:
+        print("Subtitle added successfully!")
+
 
 # 设置封面图
 # def set_cover(input_video_path):
@@ -240,15 +260,15 @@ def beach():
 if __name__ == '__main__':
     # 一些Python与ffmpeg音频处理的实用程序和命令:https://www.cnblogs.com/zhaoke271828/p/17007046.html
     input_video_path = "D:/abm.mp4"
-    input_subtitle_path = "D:/abm.srt"
-    output_video = "D:/output.mp4"
+    input_subtitle_path = "D:/jgl.srt"
+    output_video = "D:/output111.mp4"
     add_subtitle(input_video_path, input_subtitle_path, output_video)
 
     # get_info(input_video_path)
     start_time = '00:00:30'
     duration = '00:01:00'
     audio_output = "D:/output.mp3"
-    # clip_video(input_video_path, start_time, duration, output_video_with_subtitle_path)
+    # clip_video(input_video_path, start_time, duration, output_video)
     # get_audio(input_video_path, audio_output)
     # capture_screenshots(input_video_path, start_time, 5, "D:/zzz")
     # get_cover(input_video_path, "D:/zzz")

@@ -29,7 +29,7 @@ with gr.Blocks() as whisper_open_webui:
             video_run.click(video_downloader.download_from_url, inputs=[video_url, folder_path, resolution],
                             outputs=video_output)
 
-    with gr.Tab("音视频转录"):
+    with gr.Tab("字幕翻译"):
         with gr.Row():
             # 文件上传组件
             file_input = gr.File(label="选择音视频文件")
