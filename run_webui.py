@@ -1,5 +1,5 @@
 import gradio as gr
-from data import use_fast_whisper, recording, video_downloader
+from data import use_fast_whisper, recording, video_downloader, use_ffmpeg
 from util import file_util, json_read
 
 # def set_function(selected_type,file_input, device, model, task, language, output_format):
@@ -13,13 +13,12 @@ from util import file_util, json_read
 
 
 # 创建gradio页面
-with gr.Blocks() as whisper_open_webui:
+with gr.Blocks() as open_webui:
     with gr.Tab("视频下载"):
         with gr.Row():
             video_url = gr.Textbox(lines=3, placeholder="请输入Youtube或Bilibili的视频、播放列表或频道的URL",
                                    label="视频URL")
             resolution = gr.Dropdown(json_read.read_config("resolution"), value="1080p", label="分辨率")
-            # folder_path = gr.FileExplorer(label="选择输出文件夹", interactive=True, root_dir="\\")
             folder_path = gr.Textbox(lines=3, placeholder="默认下载文件夹",
                                      label="输出文件夹")
         with gr.Row():
@@ -58,6 +57,46 @@ with gr.Blocks() as whisper_open_webui:
                                                                     output_format], outputs=output)
         reset_button.click(file_util.open_folder, inputs=[], outputs=[])
 
+    with gr.Tab("视频处理"):
+        with gr.Row():
+            # 文件上传组件
+            file_input = gr.File(label="选择音视频文件")
+            out_folder_path = gr.Textbox(lines=3, placeholder="不填默认下载文件夹",
+                                         label="输出文件夹")
+        with gr.Row():
+            output = gr.Textbox(lines=3, placeholder="", label="状态")
+        with gr.Accordion("提取音频", open=False):
+            with gr.Row():
+                audio_type = gr.Dropdown(json_read.read_config("audio_type"), value="mp3",
+                                         label="音频格式")
+            with gr.Row():
+                excel_button = gr.Button(value="运行", variant="primary")
+                excel_button.click(use_ffmpeg.get_audio, inputs=[file_input, audio_type], outputs=output)
+
+        # with gr.Accordion("视频剪辑", open=False):
+        #     with gr.Row():
+        #         start_time = '00:00:30'
+        #         duration = '00:01:00'
+        #     with gr.Row():
+        #         excel_button = gr.Button(value="运行", variant="primary")
+        #         excel_button.click(use_ffmpeg.clip_video, inputs=[file_input, start_time, duration], outputs=output)
+
+        with gr.Accordion("添加音频", open=False):
+            with gr.Row():
+                input_audio_path = gr.Audio(label="选择音频文件")
+            with gr.Row():
+                excel_button = gr.Button(value="运行", variant="primary")
+                excel_button.click(use_ffmpeg.add_audio, inputs=[file_input, input_audio_path, audio_type],
+                                   outputs=output)
+
+        with gr.Accordion("提取视频", open=False):
+            with gr.Row():
+                video_type = gr.Dropdown(json_read.read_config("video_type"), value="mp4",
+                                         label="视频格式")
+            with gr.Row():
+                excel_button = gr.Button(value="运行", variant="primary")
+                excel_button.click(use_ffmpeg.get_video, inputs=[file_input, video_type], outputs=output)
+
     with gr.Tab("实时转录"):
         with gr.Row():
             # outputTab = gr.Textbox(lines=3, placeholder="待开发", label="待开发")
@@ -70,5 +109,5 @@ with gr.Blocks() as whisper_open_webui:
                 outputs=[state_label]
             )
 
-    if __name__ == '__main__':
-        whisper_open_webui.launch(share=False, server_port=9528, inbrowser=True)
+if __name__ == '__main__':
+    open_webui.launch(share=False, server_port=9528, inbrowser=True)

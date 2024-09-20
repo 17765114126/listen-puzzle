@@ -39,5 +39,14 @@
     "360p",
     "240p",
     "144p"
+  ],
+  "audio_type": [
+    "mp3",
+    "wav"
+  ],
+  "video_type": [
+    "mp4",
+    "avi",
+    "flv"
   ]
 }

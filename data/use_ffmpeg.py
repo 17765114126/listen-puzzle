@@ -1,6 +1,7 @@
 import ffmpeg
 import os
 import subprocess
+from util import file_util
 
 
 # 获取视频信息
@@ -37,8 +38,8 @@ def speed_video(input_video_path, output_video_path):
 
 
 # 视频剪辑
-def clip_video(input_video_path, t_start, t_end, output_video_path):
-    stream = ffmpeg.input(input_video_path, ss=t_start, t=t_end)
+def clip_video(input_path, t_start, t_end, output_video_path):
+    stream = ffmpeg.input(input_path, ss=t_start, t=t_end)
     stream = ffmpeg.output(stream, output_video_path)
     ffmpeg.run(stream)
 
@@ -51,24 +52,42 @@ def stitch_video(video1, video2, output_video_path):
 
 
 # 提取音频
-def get_audio(input_video_path, output_audio_path):
-    stream = ffmpeg.input(input_video_path)
-    stream = ffmpeg.output(stream.audio, output_audio_path, format='mp3')
+def get_audio(input_path, audio_suffix, output_path):
+    if file_util.check_output_path(output_path):
+        output_path = file_util.join_suffix(output_path, audio_suffix)
+    else:
+        output_path = file_util.join_suffix(file_util.get_download_folder(),
+                                            file_util.set_suffix(input_path, audio_suffix))
+    stream = ffmpeg.input(input_path)
+    stream = ffmpeg.output(stream.audio, output_path, format=audio_suffix)
     ffmpeg.run(stream)
+    return "音频提取成功，下载地址为： " + output_path
 
 
 # 提取视频
-def get_video(input_video_path, output_video_no_audio_path):
-    stream = ffmpeg.input(input_video_path)
-    stream = ffmpeg.output(stream.video, output_video_no_audio_path)
+def get_video(input_path, video_suffix, output_path):
+    if file_util.check_output_path(output_path):
+        output_path = file_util.join_suffix(output_path, video_suffix)
+    else:
+        output_path = file_util.join_suffix(file_util.get_download_folder(),
+                                            file_util.set_suffix(input_path, video_suffix))
+    stream = ffmpeg.input(input_path)
+    stream = ffmpeg.output(stream.video, output_path, format=video_suffix, vcodec='libx264', crf=23)
     ffmpeg.run(stream)
+    return "视频提取成功，下载地址为： " + output_path
 
 
 # 添加音频
-def add_audio(input_video_path, input_audio_path, output_video_path):
-    video_stream = ffmpeg.input(input_video_path)
+def add_audio(input_path, input_audio_path, output_path):
+    video_suffix = os.path.splitext(os.path.basename(input_path))[1]
+    if file_util.check_output_path(output_path):
+        output_path = file_util.join_suffix(output_path, video_suffix)
+    else:
+        output_path = file_util.join_suffix(file_util.get_download_folder(),
+                                            file_util.set_suffix(input_path, video_suffix))
+    video_stream = ffmpeg.input(input_path)
     audio_stream = ffmpeg.input(input_audio_path)
-    stream = ffmpeg.output(video_stream, audio_stream.audio, output_video_path)
+    stream = ffmpeg.output(video_stream, audio_stream.audio, output_path)
     ffmpeg.run(stream)
 
 
@@ -170,7 +189,7 @@ def get_cover(input_video_path, output_folder):
 
 
 # 获取指定时间每一秒的图片
-def get_cover_for(input_video_path):
+def get_cover_for(input_path):
     # 输出图片的基本文件名和目录
     output_dir = 'D:/zzz'
     # os.makedirs(output_dir, exist_ok=True)
@@ -188,14 +207,14 @@ def get_cover_for(input_video_path):
         # 使用ffmpeg.input加载视频，设置ss为当前时间，vframes为1来只截取一帧
         (
             ffmpeg
-            .input(input_video_path, ss=time, t=1)  # ss设置起始时间，t=1限制只处理一秒内的帧
+            .input(input_path, ss=time, t=1)  # ss设置起始时间，t=1限制只处理一秒内的帧
             .output(output_image, vframes=1)
             .run()
         )
 
 
 # 从视频制作gif
-def get_gif(input_video_path):
+def get_gif(input_path):
     # 输出的GIF文件路径
     output_gif = 'D:/zzz/output.gif'
 
@@ -204,7 +223,7 @@ def get_gif(input_video_path):
     duration = 5  # 持续时间5秒
     (
         ffmpeg
-        .input(input_video_path, ss=start_time)
+        .input(input_path, ss=start_time)
         .output(output_gif, vcodec='gif', t=duration)
         .run()
     )

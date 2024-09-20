@@ -11,6 +11,19 @@ def sanitize_title(title):
     return title
 
 
+# 将输入路径后缀去除 添加新后缀
+def set_suffix(input_path, audio_type):
+    # 获取文件名（不包括扩展名）
+    base_name = os.path.splitext(os.path.basename(input_path))[0]
+    # 创建输出文件路径
+    return f"{base_name}.{audio_type}"
+
+
+# 文件夹添加文件
+def join_suffix(folder, file_url):
+    return os.path.join(folder, file_url)
+
+
 # 获取下载文件夹地址
 def get_download_folder():
     if os.name == 'nt':  # Windows系统
@@ -39,6 +52,22 @@ def check_folder(target_file):
         return False
     # 检查目标文件是否存在,不存在返回False
     if not os.path.exists(target_file):
+        return False
+    return True
+
+
+def check_output_path(output_path):
+    if output_path is None or output_path == "":
+        # output_path为空字符串和None返回faste
+        return False
+    if not os.path.exists(output_path):
+        # output路径 不存在，函数返回 False
+        return False
+    if not os.path.isdir(output_path):
+        # output_path 不是一个目录，函数返回 False
+        return False
+    if not os.access(output_path, os.R_OK | os.W_OK):
+        # output_path 不是一个目录，函数返回 False
         return False
     return True
 
