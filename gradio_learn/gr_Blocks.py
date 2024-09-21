@@ -113,6 +113,7 @@ with gr.Blocks() as demo_webui:
                     gr.DateTime(label="日期和时间")
         with gr.Row():
             with gr.Column(scale=1):
+                gr.Markdown("Chatbot")
                 gr.Label(value="文本标签")
                 gr.Text(label="单行文本框")
                 gr.Textbox(label="多行文本框")
@@ -180,7 +181,7 @@ with gr.Blocks() as demo_webui:
     with gr.Tab("机器人"):
         chatbot = gr.Chatbot()
         msg = gr.Textbox()
-        clear = gr.Button("Clear")
+        clear = gr.Button("清空")
 
         msg.submit(user, [msg, chatbot], [msg, chatbot], queue=False).then(
             bot, chatbot, chatbot
@@ -188,7 +189,6 @@ with gr.Blocks() as demo_webui:
         clear.click(lambda: None, None, chatbot, queue=False)
     # with gr.Tab("聊天"):
     #     gr.ChatMessage()
-
 
 if __name__ == '__main__':
     demo_webui.launch(share=False, server_port=9529, inbrowser=True)
