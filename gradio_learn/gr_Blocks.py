@@ -191,4 +191,10 @@ with gr.Blocks() as demo_webui:
     #     gr.ChatMessage()
 
 if __name__ == '__main__':
-    demo_webui.launch(share=False, server_port=9529, inbrowser=True)
+    demo_webui.launch(
+        share=False,
+        server_port=9529,
+        inbrowser=True,
+        auth=("admin", "12345"),
+        # favicon_path="./static/icon.ico"
+    )

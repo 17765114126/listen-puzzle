@@ -1,6 +1,7 @@
 import os
 import subprocess
 import re
+from pathlib import Path
 
 
 def sanitize_title(title):
@@ -22,6 +23,29 @@ def set_suffix(input_path, audio_type):
 # 文件夹添加文件
 def join_suffix(folder, file_url):
     return os.path.join(folder, file_url)
+
+
+def get_chats():
+    # 获取当前脚本所在目录，即项目根目录
+    project_root = Path(__file__).resolve().parent.parent
+    # 指定chats文件夹
+    chats_folder = project_root / 'chats'
+    # 确保 chats 文件夹存在
+    if not os.path.exists(chats_folder):
+        os.makedirs(chats_folder)
+    # 初始化一个空列表来保存文件名
+    filenames = []
+    # 遍历文件夹中的每个文件
+    for file_path in chats_folder.iterdir():
+        # 只处理文件，跳过子目录
+        if file_path.is_file():
+            # 去除文件扩展名并将结果添加到列表
+            file_path_stem = []
+            file_path_stem.append(file_path.stem)
+            filenames.append(file_path_stem)
+    # 返回或打印文件名列表
+    print(filenames)
+    return filenames
 
 
 # 获取下载文件夹地址
