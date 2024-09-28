@@ -42,9 +42,8 @@ def get_chats():
             # 去除文件扩展名并将结果添加到列表
             file_path_stem = []
             file_path_stem.append(file_path.stem)
+            file_path_stem.append("x")
             filenames.append(file_path_stem)
-    # 返回或打印文件名列表
-    print(filenames)
     return filenames
 
 

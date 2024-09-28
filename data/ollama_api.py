@@ -7,8 +7,8 @@ def ollama_list():
     """
     列出 列出本地可用的模型。
     """
-    return ["Llama 3.1", "gemma2", "Qwen2.5"]
-    # return get(host + "/api/tags")
+    models_data = get(host + "/api/tags")
+    return [model['name'] for model in models_data['models']]
 
 
 def ollama_show(ollama_model):
@@ -138,14 +138,14 @@ def ollama_chat(ollama_model, messages, stream=False, tools=None, keep_alive=5):
     stream：如果响应将作为单个响应对象返回，而不是作为对象流返回false
     keep_alive：控制模型在请求后将保持加载到内存中的时间（默认值：5m)
     """
-    data = post(host + "/api/chat", params={
+    params = {
         "model": ollama_model,
         "messages": messages,
         "stream": stream,
         # "tools": tools,
         # "keep_alive": keep_alive
-    })
-    # print(data['message']['tool_calls'])
+    }
+    data = post(host + "/api/chat", params=params)
     return data['message']['content']
 
 
