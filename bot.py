@@ -5,8 +5,6 @@ import time
 from data import ollama_api
 from util import file_util
 
-dataFrame = file_util.get_chats()
-
 
 def print_like_dislike(x: gr.LikeData):
     # 定义一个函数，打印用户对聊天机器人回复的点赞或点踩的数据
@@ -66,7 +64,8 @@ def on_new_conversation(chatbot, chat_input, filename_state):
 def on_row_click(evt: gr.SelectData):
     evt_index = evt.index[0]
     # 获取被点击行的数据
-    selected_row = dataFrame[evt_index]
+    # selected_row = dataFrame[evt_index]
+    selected_row = file_util.get_chats()[evt_index]
     # 获取文件名
     filename = selected_row[0]
     # 加载聊天记录
@@ -85,15 +84,16 @@ def load_chat(filename):
     return []
 
 
-with gr.Blocks() as bot_webui:
+with gr.Blocks(theme=gr.themes.Default(primary_hue="gray", secondary_hue="neutral")) as bot_webui:
+# with gr.Blocks() as bot_webui:
     gr.Image("D:/opt/3.jpg", height=90, scale=1, label="图片")
     with gr.Row():
         with gr.Column(scale=1):
             new_conversation_button = gr.Button(value="新建对话", variant="primary")
             ollama_model = gr.Dropdown(ollama_api.ollama_list(), value="Llama 3.1", label="模型")
-
+            refresh_button = gr.Button(value="刷新", variant="primary")
             dataframe_component = gr.DataFrame(
-                value=dataFrame,
+                value=file_util.get_chats(),
                 headers=["历史记录"],
                 datatype=["str"],
                 # row_count=2,
@@ -113,19 +113,27 @@ with gr.Blocks() as bot_webui:
 
     # 用于存储当前聊天记录的文件名
     filename_state = gr.State(None)
+    # 发送信息记录保存
     chat_msg = chat_input.submit(add_message, [chatbot, chat_input, filename_state],
                                  [chatbot, chat_input, filename_state])
+    # 交互大模型
     bot_msg = chat_msg.then(bot, [chatbot, filename_state, ollama_model], chatbot, api_name="bot_response")
     bot_msg.then(lambda: gr.MultimodalTextbox(interactive=True), None, [chat_input])
     # 点赞
     chatbot.like(print_like_dislike, None, None)
+    # 刷新按钮点击事件
+    refresh_button.click(
+        fn=file_util.get_chats,  # 点击按钮时调用的函数
+        outputs=[dataframe_component]  # 函数的结果输出到哪个组件
+    )
     # 选择聊天记录
     dataframe_component.select(on_row_click, None, [chatbot, filename_state])
     # 绑定新建对话按钮
     new_conversation_button.click(on_new_conversation, [chatbot, chat_input, filename_state],
                                   [chatbot, chat_input, filename_state])
 if __name__ == '__main__':
-    bot_webui.queue()  # 启用队列功能
+    # 启用队列功能
+    bot_webui.queue()
     bot_webui.launch(
         share=False,
         server_port=9530,
