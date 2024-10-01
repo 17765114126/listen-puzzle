@@ -25,6 +25,14 @@ def join_suffix(folder, file_url):
     return os.path.join(folder, file_url)
 
 
+# 删除文件
+def del_file(file_path):
+    # 检查文件是否存在
+    if os.path.exists(file_path):
+        # 删除文件
+        os.remove(file_path)
+
+
 def get_chats():
     # 获取当前脚本所在目录，即项目根目录
     project_root = Path(__file__).resolve().parent.parent

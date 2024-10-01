@@ -7,6 +7,7 @@ def ollama_list():
     """
     列出 列出本地可用的模型。
     """
+    # return ["Llama 3.1", "gemma2", "Qwen2.5"]
     models_data = get(host + "/api/tags")
     return [model['name'] for model in models_data['models']]
 
