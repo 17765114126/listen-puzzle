@@ -144,6 +144,7 @@ with gr.Blocks(title="listen-puzzle", theme=dark_theme, css=css) as bot_webui:
         # 自定义大模型 WebUI V1.0
         后续将添加功能
         - 图片发送
+        - 图片生成
         - 样式优化
         - 语音对话模式
         - 模型拉取功能
@@ -152,7 +153,7 @@ with gr.Blocks(title="listen-puzzle", theme=dark_theme, css=css) as bot_webui:
         """,
         label="自定义大模型webui"
     )
-    with gr.Tab("对话"):
+    with gr.Tab("聊天模式"):
         with gr.Row():
             with gr.Column(scale=1):
                 new_conversation_button = gr.Button(value="新建对话")
@@ -186,7 +187,8 @@ with gr.Blocks(title="listen-puzzle", theme=dark_theme, css=css) as bot_webui:
         # 绑定新建对话按钮
         new_conversation_button.click(on_new_conversation, [chatbot, chat_input, filename_state],
                                       [chatbot, chat_input, filename_state])
-
+    with gr.Tab("语音模式"):
+        gr.Audio(label="音频文件")
     with gr.Tab("设置"):
         # with gr.Accordion("高级设置", open=False):
         gr.Text(label="token")
