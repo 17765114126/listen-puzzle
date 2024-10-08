@@ -48,13 +48,16 @@ def bot(history, filename, ollama_model):
                 'content': x[1]
             })
 
+
     # 机器人的响应文本
-    response = "**That's cooldfb开始不断步!**"
-    # response = ollama_api.ollama_chat(ollama_model, messages)
+    # response = "**That's cooldfb开始不断步!**"
+    response = ollama_api.ollama_chat(ollama_model, messages)
     # 将用户的最后一条消息和机器人的回复作为一对添加到 history 中
     if history and isinstance(history[-1], list) and len(history[-1]) == 2:
         history[-1][1] = response
     # 生成更新后的历史记录
+    # import time
+    # time.sleep(0.05)  # 每添加一个字符后暂停0.05秒
     yield history
     if filename:
         save_chat(history, filename)
@@ -86,9 +89,6 @@ def on_row_click(evt: gr.SelectData):
     elif col_index == 1:
         # 用户点击了第二列（删除）
         file_util.del_file(f"chats/{filename}")
-        # 刷新聊天记录列表
-        # updated_chats = file_util.get_chats()
-        # dataframe_component.update(value=updated_chats)
         return [], None, file_util.get_chats()  # 清空聊天bot和重置filename_state
 
 
@@ -105,24 +105,9 @@ def load_chat(filename):
 # orange    green emerald     teal  cyan
 
 dark_theme = gr.themes.Base(
-    primary_hue=gr.themes.colors.teal,
-    secondary_hue=gr.themes.colors.teal,
+    # primary_hue=gr.themes.colors.orange,
+    # secondary_hue=gr.themes.colors.orange,
     neutral_hue=gr.themes.colors.teal,
-    # font=[
-    #     "ui-sans-serif",
-    #     "system-ui",
-    #     "-apple-system",
-    #     "BlinkMacSystemFont",
-    #     '"Segoe UI"',
-    #     "Roboto",
-    #     '"Helvetica Neue"',
-    #     "Arial",
-    #     "sans-serif",
-    #     '"Apple Color Emoji"',
-    #     '"Segoe UI Emoji"',
-    #     '"Segoe UI Symbol"',
-    #     "Noto Color Emoji"
-    # ],
 )
 css = """
     .wide-first-column td:nth-child(1) {
@@ -131,23 +116,17 @@ css = """
     .wide-first-column td:nth-child(2) {
         width: 5%;
     }
-    /* 全局设置 */
-    body {
-        font-family: 'Arial', sans-serif;
-        background-color: #1a1a1a; /* 深色背景 */
-        color: #e0e0e0; /* 浅色文字 */
-    }
 """
 with gr.Blocks(title="listen-puzzle", theme=dark_theme, css=css) as bot_webui:
     markdown = gr.Markdown(
         """
         # 自定义大模型 WebUI V1.0
         后续将添加功能
+        - 流式返回信息
         - 图片发送
         - 图片生成
         - 样式优化
         - 语音对话模式
-        - 模型拉取功能
         - 模型工具调用
         - 创建自定义模型
         """,
@@ -191,7 +170,18 @@ with gr.Blocks(title="listen-puzzle", theme=dark_theme, css=css) as bot_webui:
         gr.Audio(label="音频文件")
     with gr.Tab("设置"):
         # with gr.Accordion("高级设置", open=False):
-        gr.Text(label="token")
+        # gr.Text(label="token")
+        output_text = gr.Textbox(label="输出信息")
+        with gr.Row():
+            model_name = gr.Text(label="模型名称")
+            pull_button = gr.Button(value="拉取模型")
+        with gr.Row():
+            del_model = gr.Dropdown(ollama_api.ollama_list(), value=ollama_api.ollama_list()[0], label="删除模型")
+            del_button = gr.Button(value="删除模型")
+        # 将按钮点击绑定到pull_model函数
+        pull_button.click(fn=ollama_api.ollama_pull, inputs=model_name, outputs=output_text)
+        # 将按钮点击绑定到del_model函数
+        del_button.click(fn=ollama_api.ollama_delete, inputs=del_model, outputs=output_text)
 if __name__ == '__main__':
     # 启用队列功能
     bot_webui.queue()

@@ -13,7 +13,8 @@ def post(url, params=None):
     try:
         response = requests.post(url, json=params)
         response.raise_for_status()  # 如果响应状态码不是 200，则抛出异常
-        return json_read.json_format(response)
+        return response
+        # return json_read.json_format(response)
     except requests.RequestException as e:
         print(f"请求失败: {e}")
         return None
