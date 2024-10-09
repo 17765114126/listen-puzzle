@@ -276,17 +276,118 @@ def beach():
     pass
 
 
-if __name__ == '__main__':
-    # 一些Python与ffmpeg音频处理的实用程序和命令:https://www.cnblogs.com/zhaoke271828/p/17007046.html
-    input_video_path = "D:/abm.mp4"
-    input_subtitle_path = "D:/jgl.srt"
-    output_video = "D:/output111.mp4"
-    add_subtitle(input_video_path, input_subtitle_path, output_video)
+from pathlib import Path
+import tools
+import config
+import time
+import textwrap
 
-    # get_info(input_video_path)
-    start_time = '00:00:30'
-    duration = '00:01:00'
-    audio_output = "D:/output.mp3"
+
+# 取出具有相同名称的视频和音频文件，组装为dict待处理
+def get_list():
+    folder = "E:/video/abm"
+    videos = {}
+    srts = {}
+    for it in Path(folder).iterdir():
+        if it.is_file():
+            suffix = it.suffix.lower()[1:]
+            if suffix in config.VIDEO_EXTS:
+                videos[it.stem] = it.resolve().as_posix()
+            elif suffix == 'srt':
+                srts[it.stem] = it.resolve().as_posix()
+    vailfiles = {}
+    for key, val in videos.items():
+        if key in srts:
+            vailfiles[key] = {"video": val, "srt": srts[key]}
+    length = len(vailfiles.keys())
+    if length < 1:
+        return None, 0
+    return vailfiles, length
+
+
+def zzzm():
+    RESULT_DIR = config.HOME_DIR + "/videoandsrt"
+    maxlen = 30
+    vailfiles, length = get_list()
+    # if not vailfiles:
+    #     self.post(type='error',
+    #               text='不存在同名视频和srt字幕，无法合并' if config.defaulelang == 'zh' else 'Video and srt of the same name do not exist and cannot be merged')
+    #     return
+    percent = 0
+    # self.post(type='logs',
+    #           text=f'有{length}组同名视频和srt字幕需合并' if config.defaulelang == 'zh' else f'There are {length} sets of videos with the same name and srt subtitles that need to be merged.')
+    for name, info in vailfiles.items():
+        try:
+            srt = info['srt']
+            # self.post(type='logs', text=f'{Path(srt).name} --> {Path(info["video"]).name} ')
+            result_file = RESULT_DIR + f'/{name}.mp4'
+            cmd = [
+                '-y',
+                '-i',
+                os.path.normpath(info['video'])
+            ]
+            # if not self.is_soft or not self.language:
+            # 硬字幕
+            sub_list = tools.get_subtitle_from_srt(srt, is_file=True)
+            text = ""
+            for i, it in enumerate(sub_list):
+                it['text'] = textwrap.fill(it['text'], maxlen, replace_whitespace=False).strip()
+                text += f"{it['line']}\n{it['time']}\n{it['text'].strip()}\n\n"
+            srtfile = config.TEMP_HOME + f"/srt{time.time()}.srt"
+            with Path(srtfile).open('w', encoding='utf-8') as f:
+                f.write(text)
+                f.flush()
+            assfile = tools.set_ass_font(srtfile)
+            os.chdir(config.TEMP_HOME)
+            cmd += [
+                '-c:v',
+                'libx264',
+                '-vf',
+                f"subtitles={os.path.basename(assfile)}",
+                '-crf',
+                f'{config.settings["crf"]}',
+                '-preset',
+                config.settings['preset']
+            ]
+            # else:
+            #     # 软字幕
+            #     os.chdir(self.folder)
+            #     subtitle_language = translator.get_subtitle_code(
+            #         show_target=self.language)
+            #     cmd += [
+            #         '-i',
+            #         os.path.basename(srt),
+            #         '-c:v',
+            #         'copy' if Path(info['video']).suffix.lower() == '.mp4' else 'libx264',
+            #         "-c:s",
+            #         "mov_text",
+            #         "-metadata:s:s:0",
+            #         f"language={subtitle_language}"
+            #     ]
+            cmd.append(result_file)
+            tools.runffmpeg(cmd)
+        except Exception as e:
+            print(e)
+            # self.post(type='error', text=str(e))
+            return
+        finally:
+            percent += round(100 / length, 2)
+
+
+if __name__ == '__main__':
+    zzzm()
+    # 一些Python与ffmpeg音频处理的实用程序和命令:https://www.cnblogs.com/zhaoke271828/p/17007046.html
+    # input_video_path = "D:/abm.mp4"
+    # input_subtitle_path = "D:/jgl.srt"
+    # output_video = "D:/output111.mp4"
+    # add_subtitle(input_video_path, input_subtitle_path, output_video)
+    #
+    # # get_info(input_video_path)
+    # start_time = '00:00:30'
+    # duration = '00:01:00'
+    # audio_output = "D:/output.mp3"
+
+
     # clip_video(input_video_path, start_time, duration, output_video)
     # get_audio(input_video_path, audio_output)
     # capture_screenshots(input_video_path, start_time, 5, "D:/zzz")
