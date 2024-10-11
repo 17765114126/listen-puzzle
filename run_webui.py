@@ -23,6 +23,7 @@ with gr.Blocks() as open_webui:
                                      label="输出文件夹")
         with gr.Row():
             video_run = gr.Button(value="运行", variant="primary")
+            reset_button = gr.Button(value="打开下载文件夹", variant="primary")
         with gr.Row():
             video_output = gr.Textbox(lines=3, placeholder="", label="运行状态")
             video_run.click(video_downloader.download_from_url, inputs=[video_url, folder_path, resolution],
@@ -50,11 +51,16 @@ with gr.Blocks() as open_webui:
                     value="auto", label="指定语言（若不指定默认会截取 30 秒来判断语种）")
         with gr.Row():
             excel_button = gr.Button(value="运行（第一次会下载运行的模型）", variant="primary")
-            reset_button = gr.Button(value="打开下载文件夹", variant="primary")
+
         with gr.Row():
             output = gr.Textbox(lines=3, placeholder="", label="运行状态")
-            excel_button.click(use_fast_whisper.transcribe, inputs=[file_input, device, model, task, language,
-                                                                    output_format], outputs=output)
+        with gr.Row():
+            subtitle_input = gr.File(label="选择字幕文件")
+            subtitle_button = gr.Button(value="合成字幕", variant="primary")
+
+        subtitle_button.click(use_ffmpeg.add_subtitle, inputs=[file_input,subtitle_input], outputs=output)
+        excel_button.click(use_fast_whisper.transcribe, inputs=[file_input, device, model, task, language,
+                                                                output_format], outputs=output)
         reset_button.click(file_util.open_folder, inputs=[], outputs=[])
 
     with gr.Tab("视频处理"):

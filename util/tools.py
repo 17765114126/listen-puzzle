@@ -16,7 +16,7 @@ from pathlib import Path
 
 import requests
 
-import config
+from util import config
 
 
 # 根据 gptsovits config.params['gptsovits_role'] 返回以参考音频为key的dict
@@ -317,7 +317,7 @@ def runffmpeg(arg, *, noextname=None, uuid=None, force_cpu=False):
         if not force_cpu and cmd[-1].endswith('.mp4'):
             # 存在视频的copy操作时，尝试回退使用重新编码
             # 切换为cpu
-            set_process(text=config.transobj['huituicpu'], uuid=uuid)
+            # set_process(text=config.transobj['huituicpu'], uuid=uuid)
             config.logger.error(f'cuda上执行出错，退回到CPU执行')
             for i, it in enumerate(arg_copy):
                 if i > 0 and arg_copy[i - 1] == '-c:v' and arg_copy[i] not in ['copy', 'libx264', 'libx265']:
@@ -910,7 +910,7 @@ def is_novoice_mp4(novoice_mp4, noextname, uuid=None):
             last_size = current_size
 
         if noextname not in config.queue_novice:
-            msg = f"{noextname} split no voice videoerror:{config.queue_novice=}"
+            msg = f"{noextname} split no voice videoerror:{ config.queue_novice=}"
             raise Exception(msg)
         if config.queue_novice[noextname] == 'error':
             msg = f"{noextname} split no voice videoerror"
@@ -918,9 +918,9 @@ def is_novoice_mp4(novoice_mp4, noextname, uuid=None):
 
         if config.queue_novice[noextname] == 'ing':
             size = f'{round(last_size / 1024 / 1024, 2)}MB' if last_size > 0 else ""
-            set_process(
-                text=f"{noextname} {'分离音频和画面' if config.defaulelang == 'zh' else 'spilt audio and video'} {size}",
-                uuid=uuid)
+            # set_process(
+            #     text=f"{noextname} {'分离音频和画面' if config.defaulelang == 'zh' else 'spilt audio and video'} {size}",
+            #     uuid=uuid)
             time.sleep(3)
             t += 3
             continue
@@ -986,7 +986,7 @@ def get_clone_role(set_p=False):
         res = requests.get('http://' + url.replace('http://', ''), proxies={"http": "", "https": ""})
         if res.status_code == 200:
             config.params["clone_voicelist"] = ["clone"] + res.json()
-            set_process(type='set_clone_role')
+            # set_process(type='set_clone_role')
             return True
         raise Exception(
             f"code={res.status_code},{config.transobj['You must deploy and start the clone-voice service']}")
@@ -1000,24 +1000,24 @@ def get_clone_role(set_p=False):
 # type=logs|error|subtitle|end|stop|succeed|set_precent|replace_subtitle|.... 末尾显示类型，
 # uuid 任务的唯一id，用于确定插入哪个子队列
 # nologs=False不写入日志
-def set_process(*, text="", type="logs", uuid=None, nologs=False):
-    try:
-        if text:
-            if not nologs:
-                if type == 'error':
-                    config.logger.error(text)
-                else:
-                    config.logger.info(text)
-            # 移除html
-            if type == 'error':
-                text = text.replace('\\n', ' ').strip()
-        log = {"text": text, "type": type, "uuid": uuid}
-        if uuid:
-            config.push_queue(uuid, log)
-        else:
-            config.global_msg.append(log)
-    except Exception:
-        pass
+# def set_process(*, text="", type="logs", uuid=None, nologs=False):
+#     try:
+#         if text:
+#             if not nologs:
+#                 if type == 'error':
+#                     config.logger.error(text)
+#                 else:
+#                     config.logger.info(text)
+#             # 移除html
+#             if type == 'error':
+#                 text = text.replace('\\n', ' ').strip()
+#         log = {"text": text, "type": type, "uuid": uuid}
+#         if uuid:
+#             config.push_queue(uuid, log)
+#         else:
+#             config.global_msg.append(log)
+#     except Exception:
+#         pass
 
 
 def send_notification(title, message):

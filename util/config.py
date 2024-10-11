@@ -378,6 +378,7 @@ if not _lang_path.exists():
 # _obj = json.loads(_lang_path.read_text(encoding='utf-8'))
 # 交互语言代码
 # transobj = _obj["translate_language"]
+transobj = "zh"
 # 软件界面
 # uilanglist = _obj["ui_lang"]
 # 语言代码:语言显示名称

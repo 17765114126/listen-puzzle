@@ -1,25 +1,26 @@
 # listen-puzzle
 
 #### 介绍
-语音识别项目
-
-音频转字幕文件或txt文件
+音视频处理项目
 
 #### 软件架构
-基于faster_whisper和whisper
-
+基于faster_whisper和ffmpeg
 
 #### 安装教程（后面会详细介绍，也会尽量优化简短这部分）
 
 1.  下载源码
-2.  requirements.txt内依赖安装
-3.  whisper和faster_whisper模型下载
-4.  启动run_webui.py
+2.  requirements.txt依赖安装
+3.  启动run_webui.py
+4. windows上下载ffmpeg后，将bin目录下的 ffmpeg.exe和ffprobe.exe 文件复制到当前目录下的 ffmpeg 文件夹内
+   下载地址：https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2023-11-30-12-55/ffmpeg-n6.0.1-win64-gpl-6.0.zip
 
 #### 使用说明
 
-1.  xxxx
+1. 音视频转字幕文件或txt文件
+2. 字幕翻译及视频合成
+3. 基于ffmpeg的音视频处理
+4. 视频下载
 
 #### 未来添加
-1.  字幕直接添加视频上
-2.  基于ffmpeg的webui
+1. 样式优化
+2. 使用流程优化
