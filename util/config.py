@@ -19,7 +19,8 @@ def _get_executable_path():
     else:
         return Path(__file__).parent.parent.parent.as_posix()
 
-SYS_TMP=Path(tempfile.gettempdir()).as_posix()
+
+SYS_TMP = Path(tempfile.gettempdir()).as_posix()
 
 # 程序根目录
 ROOT_DIR = _get_executable_path()
@@ -33,12 +34,12 @@ _temp_path.mkdir(parents=True, exist_ok=True)
 TEMP_DIR = _temp_path.as_posix()
 
 # 日志目录 logs
-_logs_path = _root_path / "logs"
-_logs_path.mkdir(parents=True, exist_ok=True)
-LOGS_DIR = _logs_path.as_posix()
+# _logs_path = _root_path / "logs"
+# _logs_path.mkdir(parents=True, exist_ok=True)
+# LOGS_DIR = _logs_path.as_posix()
 
 # 确保同时只能一个 faster-whisper进程在执行
-model_process = None
+# model_process = None
 
 # 模型下载地址
 MODELS_DOWNLOAD = {
@@ -159,16 +160,16 @@ def push_queue(uuid, jsondata):
 stoped_uuid_set = set()
 
 # 全局消息，不存在uuid，用于控制软件
-global_msg = []
+# global_msg = []
 
 # 软件退出
-exit_soft = False
+# exit_soft = False
 
 # 所有设置窗口和子窗口
-child_forms = {}
+# child_forms = {}
 
 # 存放一次性多选的视频完整路径
-queue_mp4 = []
+# queue_mp4 = []
 
 # 存放视频分离为无声视频进度，noextname为key，用于判断某个视频是否是否已预先创建好 novice_mp4, “ing”=需等待，end=成功完成，error=出错了
 queue_novice = {}
@@ -178,33 +179,32 @@ queue_novice = {}
 # 主界面完整流程状态标识：开始按钮状态 ing 执行中，stop手动停止 end 正常结束
 current_status = "stop"
 # 工具箱翻译进行状态,ing进行中，其他停止
-box_trans = "stop"
+# box_trans = "stop"
 # 工具箱tts状态
-box_tts = "stop"
+# box_tts = "stop"
 # 工具箱识别状态
-box_recogn = 'stop'
+# box_recogn = 'stop'
 
 # 倒计时数秒
-task_countdown = 0
+# task_countdown = 0
 
 #####################################
 # 预先处理队列
-prepare_queue = []
+# prepare_queue = []
 # 识别队列
-regcon_queue = []
+# regcon_queue = []
 # 翻译队列
-trans_queue = []
+# trans_queue = []
 # 配音队列
-dubb_queue = []
+# dubb_queue = []
 # 音视频画面对齐
-align_queue = []
+# align_queue = []
 # 合成队列
-assemb_queue = []
+# assemb_queue = []
 
 
 # 执行模式 gui 或 api
-exec_mode="gui"
-
+exec_mode = "gui"
 
 # 支持的视频格式
 VIDEO_EXTS = ["mp4", "mkv", "mpeg", "avi", "mov"]
@@ -242,7 +242,7 @@ def parse_init():
         "cuda_qp": False,
         "preset": "slow",
         "ffmpeg_cmd": "",
-        "aisendsrt":"false",
+        "aisendsrt": "false",
         "video_codec": 264,
         "openaitts_model": "tts-1,tts-1-hd",
         "openairecognapi_model": "whisper-1",
@@ -261,8 +261,8 @@ def parse_init():
         "overall_silence": 250,
         "overall_threshold": 0.5,
         "overall_speech_pad_ms": 100,
-        "overall_maxsecs":9000,
-        "rephrase":True,
+        "overall_maxsecs": 9000,
+        "rephrase": True,
         "voice_silence": 250,
         "interval_split": 10,
         "bgm_split_time": 300,
@@ -344,7 +344,7 @@ def parse_init():
             else:
                 _settings[key] = value.lower() if value else ""
         if _settings['model_list'].find('large-v3-turbo') == -1:
-            _settings['model_list']=_settings['model_list'].replace(',large-v3,',',large-v3,large-v3-turbo,')
+            _settings['model_list'] = _settings['model_list'].replace(',large-v3,', ',large-v3,large-v3-turbo,')
         if _settings['gemini_model'].find('gemini') == -1:
             _settings["gemini_model"] = "gemini-pro,gemini-1.5-pro,gemini-1.5-flash"
         default.update(_settings)
@@ -353,7 +353,7 @@ def parse_init():
             default['homedir'] = _defaulthomedir
         Path(default['homedir']).mkdir(parents=True, exist_ok=True)
         with open(ROOT_DIR + '/videotrans/cfg.json', 'w', encoding='utf-8') as f:
-            f.write(json.dumps(default,ensure_ascii=False))
+            f.write(json.dumps(default, ensure_ascii=False))
         return default
 
 
@@ -392,9 +392,9 @@ transobj = "zh"
 
 #############################################
 # openai  faster-whisper 识别模型
-WHISPER_MODEL_LIST = re.split('[,，]', settings['model_list'])
+# WHISPER_MODEL_LIST = re.split('[,，]', settings['model_list'])
 
-ChatTTS_voicelist = re.split(r'[,，]', settings['chattts_voice'])
+# ChatTTS_voicelist = re.split(r'[,，]', settings['chattts_voice'])
 _chatgpt_model_list = [it.strip() for it in settings['chatgpt_model'].split(',') if it.strip()]
 _azure_model_list = [it.strip() for it in settings['azure_model'].split(',') if it.strip()]
 _localllm_model_list = [it.strip() for it in settings['localllm_model'].split(',') if it.strip()]
@@ -458,7 +458,7 @@ def getset_params(obj=None):
 Translation:
 
 """
-    prompt_zh_srt="""请将<source>中的srt字幕格式内容翻译到{lang}，然后只输出译文，不要添加任何说明或引导词：
+    prompt_zh_srt = """请将<source>中的srt字幕格式内容翻译到{lang}，然后只输出译文，不要添加任何说明或引导词：
 
 注意以下要求：
 1. **只翻译**字幕文本内容，不翻译字幕的行号和时间戳。
@@ -473,7 +473,7 @@ Translation:
 
 译文:
 """
-    prompt_en_srt="""Please translate the content of srt subtitle format in <source> to {lang}, and then output only the translated text without adding any description or guide words:
+    prompt_en_srt = """Please translate the content of srt subtitle format in <source> to {lang}, and then output only the translated text without adding any description or guide words:
 
 Note the following requirements:
 1. **Translate **subtitle text content only, do not translate subtitle line numbers and timestamps.
@@ -492,12 +492,12 @@ Translation:"""
         with open(ROOT_DIR + "/videotrans/params.json", 'w', encoding='utf-8') as f:
             f.write(json.dumps(obj, ensure_ascii=False))
         return obj
-    #获取
+    # 获取
     default = {
         "last_opendir": HOME_DIR,
         "cuda": False,
 
-        "line_roles":{},
+        "line_roles": {},
 
         "only_video": False,
         "is_separate": False,
@@ -538,7 +538,8 @@ Translation:"""
 
         "tts_type": 0,  # 所选的tts顺序
         "split_type": "all",
-        "model_name": "medium" if Path(ROOT_DIR+"/models/models--Systran--faster-whisper-medium/snapshots").is_dir() else "tiny",  # 模型名
+        "model_name": "medium" if Path(
+            ROOT_DIR + "/models/models--Systran--faster-whisper-medium/snapshots").is_dir() else "tiny",  # 模型名
         "recogn_type": 0,  # 语音识别方式，数字代表显示顺序
 
         "voice_autorate": False,
@@ -651,41 +652,42 @@ Translation:"""
 
         "proxy": "",
 
-        "stt_source_language":0,
-        "stt_recogn_type":0,
-        "stt_model_name":0,
+        "stt_source_language": 0,
+        "stt_recogn_type": 0,
+        "stt_model_name": 0,
 
-        "trans_translate_type":0,
-        "trans_source_language":0,
-        "trans_target_language":1,
-        "trans_out_format":0,
+        "trans_translate_type": 0,
+        "trans_source_language": 0,
+        "trans_target_language": 1,
+        "trans_out_format": 0,
 
-        "dubb_source_language":0,
-        "dubb_tts_type":0,
-        "dubb_role":0,
-        "dubb_out_format":0,
-        "dubb_voice_autorate":False,
-        "dubb_hecheng_rate":0,
-        "dubb_pitch_rate":0,
-        "dubb_volume_rate":0,
-
+        "dubb_source_language": 0,
+        "dubb_tts_type": 0,
+        "dubb_role": 0,
+        "dubb_out_format": 0,
+        "dubb_voice_autorate": False,
+        "dubb_hecheng_rate": 0,
+        "dubb_pitch_rate": 0,
+        "dubb_volume_rate": 0,
 
     }
     # 创建默认提示词文件
-    if Path(ROOT_DIR+'/videotrans/prompts/srt').exists():
-        Path(ROOT_DIR+'/videotrans/prompts/srt').mkdir(parents=True,exist_ok=True)
+    if Path(ROOT_DIR + '/videotrans/prompts/srt').exists():
+        Path(ROOT_DIR + '/videotrans/prompts/srt').mkdir(parents=True, exist_ok=True)
+
     def _create_default_promot():
         prompt_langcode = '' if defaulelang == "zh" else "-en"
         _root_path = Path(ROOT_DIR)
-        for ainame in ['chatgpt','azure','gemini','localllm','ai302','zijie']:
+        for ainame in ['chatgpt', 'azure', 'gemini', 'localllm', 'ai302', 'zijie']:
             chatgpt_path = _root_path / f'videotrans/{ainame}{prompt_langcode}.txt'
             if not chatgpt_path.exists():
-                with chatgpt_path.open('w',encoding='utf-8') as f:
-                    f.write(prompt_zh if defaulelang=='zh' else prompt_en)
+                with chatgpt_path.open('w', encoding='utf-8') as f:
+                    f.write(prompt_zh if defaulelang == 'zh' else prompt_en)
             chatgpt_path = _root_path / f'videotrans/prompts/srt/{ainame}{prompt_langcode}.txt'
             if not chatgpt_path.exists():
                 with chatgpt_path.open('w', encoding='utf-8') as f:
-                    f.write(prompt_zh_srt if defaulelang=='zh' else prompt_en_srt)
+                    f.write(prompt_zh_srt if defaulelang == 'zh' else prompt_en_srt)
+
     try:
         _create_default_promot()
         if os.path.exists(ROOT_DIR + "/videotrans/params.json"):
@@ -696,6 +698,7 @@ Translation:"""
     except Exception:
         pass
     return default
+
 
 # api key 翻译配置等信息，每次执行任务均有变化
 params = getset_params()

@@ -1,5 +1,5 @@
 import gradio as gr
-from data import use_fast_whisper, recording, video_downloader, use_ffmpeg
+from data import use_fast_whisper, video_downloader, use_ffmpeg
 from util import file_util, json_read
 
 # def set_function(selected_type,file_input, device, model, task, language, output_format):
@@ -103,17 +103,9 @@ with gr.Blocks() as open_webui:
                 excel_button = gr.Button(value="运行", variant="primary")
                 excel_button.click(use_ffmpeg.get_video, inputs=[file_input, video_type], outputs=output)
 
-    with gr.Tab("实时转录"):
-        with gr.Row():
-            # outputTab = gr.Textbox(lines=3, placeholder="待开发", label="待开发")
-            recording_button = gr.Button("开始/停止录音", variant="primary")
-            state_label = gr.Label("等待开始...")
-
-            recording_button.click(
-                recording.listen_for_audio,
-                inputs=[recording_button],
-                outputs=[state_label]
-            )
 
 if __name__ == '__main__':
-    open_webui.launch(share=False, server_port=9528, inbrowser=True)
+    open_webui.launch(share=False,
+                      server_port=9528,
+                      inbrowser=True,
+                      favicon_path="./static/icon.ico")
