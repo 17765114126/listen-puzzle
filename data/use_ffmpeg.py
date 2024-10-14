@@ -1,7 +1,8 @@
 import ffmpeg
 import os
 import subprocess
-from util import file_util, tools, config
+from util import file_util, tools
+import config
 from pathlib import Path
 import time
 import textwrap

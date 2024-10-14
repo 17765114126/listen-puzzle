@@ -34,9 +34,9 @@ _temp_path.mkdir(parents=True, exist_ok=True)
 TEMP_DIR = _temp_path.as_posix()
 
 # 日志目录 logs
-# _logs_path = _root_path / "logs"
-# _logs_path.mkdir(parents=True, exist_ok=True)
-# LOGS_DIR = _logs_path.as_posix()
+_logs_path = _root_path / "logs"
+_logs_path.mkdir(parents=True, exist_ok=True)
+LOGS_DIR = _logs_path.as_posix()
 
 # 确保同时只能一个 faster-whisper进程在执行
 # model_process = None
@@ -159,58 +159,64 @@ def push_queue(uuid, jsondata):
 # 存储已停止/暂停的任务
 stoped_uuid_set = set()
 
-# 全局消息，不存在uuid，用于控制软件
-# global_msg = []
-
-# 软件退出
-# exit_soft = False
-
-# 所有设置窗口和子窗口
-# child_forms = {}
-
-# 存放一次性多选的视频完整路径
-# queue_mp4 = []
-
 # 存放视频分离为无声视频进度，noextname为key，用于判断某个视频是否是否已预先创建好 novice_mp4, “ing”=需等待，end=成功完成，error=出错了
 queue_novice = {}
 
 #################################################
-
 # 主界面完整流程状态标识：开始按钮状态 ing 执行中，stop手动停止 end 正常结束
 current_status = "stop"
-# 工具箱翻译进行状态,ing进行中，其他停止
-# box_trans = "stop"
-# 工具箱tts状态
-# box_tts = "stop"
-# 工具箱识别状态
-# box_recogn = 'stop'
-
-# 倒计时数秒
-# task_countdown = 0
-
 #####################################
-# 预先处理队列
-# prepare_queue = []
-# 识别队列
-# regcon_queue = []
-# 翻译队列
-# trans_queue = []
-# 配音队列
-# dubb_queue = []
-# 音视频画面对齐
-# align_queue = []
-# 合成队列
-# assemb_queue = []
-
-
-# 执行模式 gui 或 api
-exec_mode = "gui"
-
+resolution = [
+    "4320p",
+    "2160p",
+    "1440p",
+    "1080p",
+    "720p",
+    "480p",
+    "360p",
+    "240p",
+    "144p"
+  ]
 # 支持的视频格式
-VIDEO_EXTS = ["mp4", "mkv", "mpeg", "avi", "mov"]
+video_type = ["mp4", "avi", "flv", "mkv", "mpeg",  "mov"]
 # 支持的音频格式
-AUDIO_EXITS = ["mp3", "wav", "aac", "flac", "m4a"]
-
+audio_type = ["mp3", "wav", "aac", "flac", "m4a"]
+whisper_model = [
+    "tiny",
+    "base",
+    "small",
+    "medium",
+    "large"
+  ]
+whisper_device = ["cpu", "cuda"]
+whisper_language = [
+    "auto",
+    "zh",
+    "en",
+    "ru",
+    "fr",
+    "de",
+    "ko",
+    "ja"
+]
+translator_language = [
+    "zh",
+    "en",
+    "ru",
+    "fr",
+    "de",
+    "ko",
+    "ja",
+    "ar",
+    "es"
+]
+translator_engine = [
+    "bing",
+    "sogou",
+    "alibaba",
+    "caiyun",
+    "deepl"
+]
 # 设置当前可用视频编码  libx264 h264_qsv h264_nvenc 等
 video_codec = None
 
@@ -375,26 +381,9 @@ if not _lang_path.exists():
     defaulelang = "en"
     _lang_path = _root_path / f'videotrans/language/{defaulelang}.json'
 
-# _obj = json.loads(_lang_path.read_text(encoding='utf-8'))
-# 交互语言代码
-# transobj = _obj["translate_language"]
 transobj = "zh"
-# 软件界面
-# uilanglist = _obj["ui_lang"]
-# 语言代码:语言显示名称
-# langlist: dict = _obj["language_code_list"]
-# 语言显示名称：语言代码
-# rev_langlist = {code_alias: code for code, code_alias in langlist.items()}
-# 语言显示名称 list
-# langnamelist = list(langlist.values())
-# 工具箱语言
-# box_lang = _obj['toolbox_lang']
 
 #############################################
-# openai  faster-whisper 识别模型
-# WHISPER_MODEL_LIST = re.split('[,，]', settings['model_list'])
-
-# ChatTTS_voicelist = re.split(r'[,，]', settings['chattts_voice'])
 _chatgpt_model_list = [it.strip() for it in settings['chatgpt_model'].split(',') if it.strip()]
 _azure_model_list = [it.strip() for it in settings['azure_model'].split(',') if it.strip()]
 _localllm_model_list = [it.strip() for it in settings['localllm_model'].split(',') if it.strip()]

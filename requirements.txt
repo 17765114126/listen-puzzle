@@ -7,7 +7,7 @@ sounddevice==0.4.7
 modelscope
 ffmpeg-python==0.2.0
 yt-dlp==2024.8.6d
-
+translators
 
 
 # scipy

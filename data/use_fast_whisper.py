@@ -19,7 +19,7 @@ def transcription(audio_data, language_type):
     return recognized_text
 
 
-def transcribe(audio_path, device_type, model_type, task_type, language_type, output_format_type):
+def transcribe(audio_path, device_type, model_type, language_type, output_format_type):
     os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
     if language_type == "auto":
         language_type = None
@@ -33,7 +33,7 @@ def transcribe(audio_path, device_type, model_type, task_type, language_type, ou
     # 加载模型
     model = WhisperModel(model_path, device=device_type, compute_type="int8")
 
-    segments, info = model.transcribe(audio_path, beam_size=5, task=task_type, language=language_type)
+    segments, info = model.transcribe(audio_path, beam_size=5, task="transcribe", language=language_type)
 
     # 输出检测到的语言和概率
     # print("Detected language '%s' with probability %f" % (info.language, info.language_probability))

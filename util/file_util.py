@@ -20,9 +20,20 @@ def set_suffix(input_path, audio_type):
     return f"{base_name}.{audio_type}"
 
 
+# 获取文件名称
+def get_file_name(file_path):
+    return os.path.basename(file_path)
+
+
 # 文件夹添加文件
 def join_suffix(folder, file_url):
     return os.path.join(folder, file_url)
+
+
+def get_file_content(file_url):
+    with open(file_url, 'r', encoding='utf-8') as file:
+        content = file.read()
+    return re.split(r'\n\n+', content.strip())
 
 
 # 删除文件

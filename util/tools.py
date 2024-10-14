@@ -16,7 +16,7 @@ from pathlib import Path
 
 import requests
 
-from util import config
+import config
 
 
 # 根据 gptsovits config.params['gptsovits_role'] 返回以参考音频为key的dict
@@ -891,40 +891,40 @@ def get_srt_from_list(srt_list):
 
 
 # 判断 novoice.mp4是否创建好
-def is_novoice_mp4(novoice_mp4, noextname, uuid=None):
-    # 预先创建好的
-    # 判断novoice_mp4是否完成
-    t = 0
-    if noextname not in config.queue_novice and vail_file(novoice_mp4):
-        return True
-    if noextname in config.queue_novice and config.queue_novice[noextname] == 'end':
-        return True
-    last_size = 0
-    while True:
-        if config.current_status != 'ing':
-            return
-        if vail_file(novoice_mp4):
-            current_size = os.path.getsize(novoice_mp4)
-            if last_size > 0 and current_size == last_size and t > 600:
-                return True
-            last_size = current_size
-
-        if noextname not in config.queue_novice:
-            msg = f"{noextname} split no voice videoerror:{ config.queue_novice=}"
-            raise Exception(msg)
-        if config.queue_novice[noextname] == 'error':
-            msg = f"{noextname} split no voice videoerror"
-            raise Exception(msg)
-
-        if config.queue_novice[noextname] == 'ing':
-            size = f'{round(last_size / 1024 / 1024, 2)}MB' if last_size > 0 else ""
-            # set_process(
-            #     text=f"{noextname} {'分离音频和画面' if config.defaulelang == 'zh' else 'spilt audio and video'} {size}",
-            #     uuid=uuid)
-            time.sleep(3)
-            t += 3
-            continue
-        return True
+# def is_novoice_mp4(novoice_mp4, noextname, uuid=None):
+#     # 预先创建好的
+#     # 判断novoice_mp4是否完成
+#     t = 0
+#     if noextname not in config.queue_novice and vail_file(novoice_mp4):
+#         return True
+#     if noextname in config.queue_novice and config.queue_novice[noextname] == 'end':
+#         return True
+#     last_size = 0
+#     while True:
+#         if config.current_status != 'ing':
+#             return
+#         if vail_file(novoice_mp4):
+#             current_size = os.path.getsize(novoice_mp4)
+#             if last_size > 0 and current_size == last_size and t > 600:
+#                 return True
+#             last_size = current_size
+#
+#         if noextname not in config.queue_novice:
+#             msg = f"{noextname} split no voice videoerror:{ config.queue_novice=}"
+#             raise Exception(msg)
+#         if config.queue_novice[noextname] == 'error':
+#             msg = f"{noextname} split no voice videoerror"
+#             raise Exception(msg)
+#
+#         if config.queue_novice[noextname] == 'ing':
+#             size = f'{round(last_size / 1024 / 1024, 2)}MB' if last_size > 0 else ""
+#             # set_process(
+#             #     text=f"{noextname} {'分离音频和画面' if config.defaulelang == 'zh' else 'spilt audio and video'} {size}",
+#             #     uuid=uuid)
+#             time.sleep(3)
+#             t += 3
+#             continue
+#         return True
 
 
 def match_target_amplitude(sound, target_dBFS):
@@ -1021,8 +1021,6 @@ def get_clone_role(set_p=False):
 
 
 def send_notification(title, message):
-    if config.exec_mode == 'api':
-        return
     from plyer import notification
     try:
         notification.notify(
