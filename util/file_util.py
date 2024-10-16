@@ -44,6 +44,29 @@ def del_file(file_path):
         os.remove(file_path)
 
 
+# 保存文本到文件
+def save_text_file(content):
+    # 添加自定义后缀
+    add_suffix = ".str"
+    # Windows系统中"C盘/下载"文件夹的通用路径
+    download_path = os.path.join('C:\\Users', os.getlogin(), 'Downloads')
+    # 指定保存的Excel文件路径
+    file_path = os.path.join(download_path, "subtitles" + add_suffix)
+    # 将字幕内容写入到文件
+    with open(file_path, "w", encoding="utf-8") as file:
+        file.write(content)
+    return f"字幕文件已保存至: {file_path}"
+
+
+# 读取文件内容
+def read_text_file(file):
+    if file is None:
+        return ""
+    with open(file.name, "r", encoding="utf-8") as f:
+        content = f.read()
+    return content
+
+
 def get_chats():
     # 获取当前脚本所在目录，即项目根目录
     project_root = Path(__file__).resolve().parent.parent

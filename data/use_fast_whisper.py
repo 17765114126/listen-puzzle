@@ -2,6 +2,7 @@ from faster_whisper import WhisperModel
 import os
 from util import file_util, download_model
 import numpy as np
+from data import use_translation
 
 
 def transcription(audio_data, language_type):
@@ -29,38 +30,42 @@ def transcribe(audio_path, device_type, model_type, language_type, output_format
     if not file_util.check_folder(os.path.join(model_path, "model.bin")):
         download_model.download_model(model_type)
         return f"正在下载模型{model_path}，请下载完毕后重试(可在控制台查看下载进度)"
-    # model_path = "base"
     # 加载模型
     model = WhisperModel(model_path, device=device_type, compute_type="int8")
 
     segments, info = model.transcribe(audio_path, beam_size=5, task="transcribe", language=language_type)
 
-    # 输出检测到的语言和概率
-    # print("Detected language '%s' with probability %f" % (info.language, info.language_probability))
-    # 打印每个片段的信息
-    # for segment in segments:
-    #     print("[%.2fs -> %.2fs] %s" % (segment.start, segment.end, segment.text))
-
-    # 去掉文件名中的后缀
-    del_suffix = os.path.splitext(os.path.basename(audio_path))[0]
-    # 添加自定义后缀
-    add_suffix = "." + output_format_type
-    # Windows系统中"C盘/下载"文件夹的通用路径
-    download_path = os.path.join('C:\\Users', os.getlogin(), 'Downloads')
-    # 指定保存的Excel文件路径
-    new_audio_path = os.path.join(download_path, del_suffix + add_suffix)
+    # # 去掉文件名中的后缀
+    # del_suffix = os.path.splitext(os.path.basename(audio_path))[0]
+    # # 添加自定义后缀
+    # add_suffix = "." + output_format_type
+    # # Windows系统中"C盘/下载"文件夹的通用路径
+    # download_path = os.path.join('C:\\Users', os.getlogin(), 'Downloads')
+    # # 指定保存的Excel文件路径
+    # new_audio_path = os.path.join(download_path, del_suffix + add_suffix)
 
     # 保存转录结果为txt文件
+    segments_txt = ""
     if output_format_type == "txt":
-        segments_txt = ""
         for segment in segments:
             segments_txt += segment.text + "\n"
-        with open(new_audio_path, "w", encoding="utf-8") as txt_file:
-            txt_file.write(segments_txt)
+            segments_txt += use_translation.translator_response(segment.text) + "\n"
+        # with open(new_audio_path, "w", encoding="utf-8") as txt_file:
+        #     txt_file.write(segments_txt)
     # 保存转录结果为SRT文件
     if output_format_type == "srt":
-        file_util.segments_to_srt(segments, new_audio_path)
-    return f"执行成功\n"
+        # file_util.segments_to_srt(segments, new_audio_path)
+        for i, segment in enumerate(segments, start=1):
+            start_time = segment.start
+            end_time = segment.end
+            start_str = f"{int(start_time // 3600):02d}:{int((start_time % 3600) // 60):02d}:{int(start_time % 60):02d},{int((start_time % 1) * 1000):03d}"
+            end_str = f"{int(end_time // 3600):02d}:{int((end_time % 3600) // 60):02d}:{int(end_time % 60):02d},{int((end_time % 1) * 1000):03d}"
+            subtitle_text = segment.text.strip()
+            segments_txt += f"{i}\n"
+            segments_txt += f"{start_str} --> {end_str}\n"
+            segments_txt += f"{subtitle_text}\n"
+            segments_txt += use_translation.translator_response(subtitle_text) + "\n\n"
+    return f"执行成功\n", segments_txt
 
 
 def speak(audio_data):

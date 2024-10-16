@@ -22,61 +22,73 @@ with gr.Blocks() as open_webui:
             resolution = gr.Dropdown(config.resolution, value="1080p", label="分辨率")
             folder_path = gr.Textbox(lines=3, placeholder="默认下载文件夹",
                                      label="输出文件夹")
-        with gr.Row():
-            video_run = gr.Button(value="运行", variant="primary")
-            reset_button = gr.Button(value="打开下载文件夹", variant="primary")
-        with gr.Row():
-            video_output = gr.Textbox(lines=3, placeholder="", label="运行状态")
-            video_run.click(video_downloader.download_from_url, inputs=[video_url, folder_path, resolution],
-                            outputs=video_output)
+            with gr.Row():
+                video_run = gr.Button(value="运行", variant="primary")
+                reset_button = gr.Button(value="打开下载文件夹", variant="primary")
+            with gr.Row():
+                video_output = gr.Textbox(lines=3, placeholder="", label="运行状态")
 
     with gr.Tab("字幕翻译"):
         with gr.Row():
-            # 文件上传组件
-            file_input = gr.File(label="选择音视频文件")
-            subtitle_input = gr.File(label="选择字幕文件")
-            output = gr.Textbox(lines=3, placeholder="", label="运行状态")
-        gr.Markdown(value="字幕文件")
-        with gr.Row():
-            # run_type = gr.Dropdown(json_read.read_config("type"), value="whisper", label="类型")
-            with gr.Column(scale=1):
-                model = gr.Dropdown(config.whisper_model, value="small",
-                                    label="模型(转录效果依次增加，但相应花费的时间也会增加)")
-                output_format = gr.Dropdown(["srt", "txt"], value="srt", label="输出文件的格式")
-            # 使用 gr.Accordion 将 task 和 language 折叠起来
-            with gr.Column(scale=2):
-                with gr.Accordion("高级设置", open=True):
+            with gr.Column():
+                with gr.Row():
+                    file_input = gr.File(label="选择音视频文件")
+                    subtitle_input = gr.File(label="选择字幕文件")
+                gr.Markdown(value="字幕文件")
+                with gr.Row():
+                    # run_type = gr.Dropdown(json_read.read_config("type"), value="whisper", label="类型")
+                    with gr.Column(scale=1):
+                        model = gr.Dropdown(config.whisper_model, value="small",
+                                            label="模型(转录效果依次增加，但相应花费的时间也会增加)")
+                        output_format = gr.Dropdown(["srt", "txt"], value="srt", label="输出文件的格式")
+                    # 使用 gr.Accordion 将 task 和 language 折叠起来
+                    with gr.Column(scale=2):
+                        with gr.Accordion("高级设置", open=True):
+                            device = gr.Dropdown(config.whisper_device, value="cpu",
+                                                 label="硬件加速(cuda：显卡，cpu：CPU)")
+                            language = gr.Dropdown(
+                                config.whisper_language,
+                                value="auto", label="指定语言（若不指定默认会截取 30 秒来判断语种）")
+                        # excel_button = gr.Button(value="运行（第一次会下载运行的模型）", variant="primary")
+                advanced_checkbox = gr.Checkbox(label="是否翻译", value=True)
+                with gr.Accordion("翻译设置", open=True):
                     with gr.Row():
-                        device = gr.Dropdown(config.whisper_device, value="cpu",
-                                             label="硬件加速(cuda：显卡，cpu：CPU)")
-                        language = gr.Dropdown(
-                            config.whisper_language,
-                            value="auto", label="指定语言（若不指定默认会截取 30 秒来判断语种）")
-                excel_button = gr.Button(value="运行（第一次会下载运行的模型）", variant="primary")
-        gr.Markdown(value="字幕翻译")
-        with gr.Row():
-            with gr.Column(scale=1):
-                translator_engine = gr.Dropdown(
-                    config.translator_engine,
-                    value="bing", label="翻译引擎")
-            with gr.Column(scale=2):
-                subtitle_language = gr.Dropdown(
-                    config.translator_language,
-                    value="zh", label="目标语言")
-            with gr.Column(scale=3):
-                subtitle_bilingual = gr.Checkbox(label="双语对照")
-                translate_button = gr.Button(value="翻译", variant="primary")
-        gr.Markdown(value="合成字幕")
-        with gr.Row():
-            subtitle_button = gr.Button(value="合成字幕", variant="primary")
+                        with gr.Column(scale=1):
+                            translator_engine = gr.Dropdown(
+                                config.translator_engine,
+                                value="bing", label="翻译引擎")
+                        with gr.Column(scale=2):
+                            subtitle_language = gr.Dropdown(
+                                config.translator_language,
+                                value="zh", label="目标语言")
+                        with gr.Column(scale=3):
+                            subtitle_bilingual = gr.Checkbox(label="双语对照")
+                with gr.Row():
+                    excel_button = gr.Button(value="生成字幕文件（第一次会下载模型）", variant="primary")
+                    # translate_button = gr.Button(value="翻译", variant="primary")
+                    subtitle_button = gr.Button(value="合成字幕", variant="primary")
 
-        translate_button.click(use_translation.subtitle_translate,
-                               inputs=[subtitle_input, translator_engine, subtitle_language, subtitle_bilingual],
-                               outputs=output)
+            with gr.Column(variant="panel", elem_classes="right-column"):
+                output = gr.Textbox(lines=3, placeholder="", label="运行状态")
+                gr.Markdown(value="字幕文件预览")
+                subtitle_content = gr.Textbox(label="字幕内容", lines=30, interactive=True)
+                save_button = gr.Button(value="保存文件", variant="primary")
+        save_button.click(fn=file_util.save_text_file, inputs=[subtitle_content], outputs=output)
+        # translate_button.click(use_translation.subtitle_translate,
+        #                        inputs=[subtitle_input, translator_engine, subtitle_language, subtitle_bilingual],
+        #                        outputs=output)
+        # 选中字幕文件 将内容添加到预览
+        subtitle_input.change(fn=file_util.read_text_file, inputs=[subtitle_input], outputs=[subtitle_content])
+        # 保存文件
         subtitle_button.click(use_ffmpeg.add_subtitle, inputs=[file_input, subtitle_input], outputs=output)
+        # 生成字幕
         excel_button.click(use_fast_whisper.transcribe, inputs=[file_input, device, model, language,
-                                                                output_format], outputs=output)
+                                                                output_format], outputs=[output, subtitle_content])
+        # 打开下载文件夹
         reset_button.click(file_util.open_folder, inputs=[], outputs=[])
+        # 下载视频
+        video_run.click(video_downloader.download_from_url, inputs=[video_url, folder_path, resolution],
+                        outputs=video_output)
 
     with gr.Tab("视频处理"):
         with gr.Row():
