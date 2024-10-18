@@ -257,7 +257,9 @@ def add_subtitle(video_path, subtitle_content, subtitle_type=1, maxlen=50):
                 '-c:v', 'libx264',
                 '-vf', f"subtitles={ass_file}",
                 '-crf', '13',
-                '-preset', "slow"
+                '-preset', "slow",
+                '-vsync', 'vfr',  # 确保视频同步
+                '-async', '1'  # 确保音频同步
             ]
         else:
             # 软字幕
@@ -275,10 +277,11 @@ def add_subtitle(video_path, subtitle_content, subtitle_type=1, maxlen=50):
             subprocess.run(cmd,
                            stdout=subprocess.PIPE,
                            stderr=subprocess.STDOUT,
-                           encoding="utf-8",
-                           check=True,
                            text=True,
-                           creationflags=0 if sys.platform != 'win32' else subprocess.CREATE_NO_WINDOW)
+                           # encoding="utf-8",
+                           # check=True,
+                           # creationflags=0 if sys.platform != 'win32' else subprocess.CREATE_NO_WINDOW
+            )
         except subprocess.CalledProcessError as e:
             print("An error occurred while running the command.")
             print(f"Command: {e.cmd}")

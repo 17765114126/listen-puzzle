@@ -52,7 +52,5 @@ def transcribe(audio_path, device_type, model_type, language_type, output_format
                                                                     translator_engine) + "\n\n"
             else:
                 # 原文
-                segments_txt += f"{i}\n"
-                segments_txt += f"{start_str} --> {end_str}\n"
-                segments_txt += f"{subtitle_text}\n"
+                segments_txt += f"{subtitle_text}\n\n"
     return f"执行成功\n", segments_txt
