@@ -65,7 +65,6 @@ with gr.Blocks() as open_webui:
                             subtitle_bilingual = gr.Checkbox(label="双语对照")
                 with gr.Row():
                     excel_button = gr.Button(value="生成字幕文件（第一次会下载模型）", variant="primary")
-                    # translate_button = gr.Button(value="翻译", variant="primary")
                     subtitle_button = gr.Button(value="合成字幕", variant="primary")
 
             with gr.Column(variant="panel", elem_classes="right-column"):
@@ -73,15 +72,13 @@ with gr.Blocks() as open_webui:
                 gr.Markdown(value="字幕文件预览")
                 subtitle_content = gr.Textbox(label="字幕内容", lines=30, interactive=True)
                 save_button = gr.Button(value="保存文件", variant="primary")
-        save_button.click(fn=file_util.save_text_file, inputs=[subtitle_content], outputs=output)
-        # translate_button.click(use_translation.subtitle_translate,
-        #                        inputs=[subtitle_input, translator_engine, subtitle_language, subtitle_bilingual],
-        #                        outputs=output)
+        # 保存文件
+        save_button.click(fn=file_util.save_text_file, inputs=["subtitle.str", subtitle_content], outputs=output)
         # 选中字幕文件 将内容添加到预览
         subtitle_input.change(fn=file_util.read_text_file, inputs=[subtitle_input], outputs=[subtitle_content])
-        # 保存文件
-        subtitle_button.click(use_ffmpeg.add_subtitle, inputs=[file_input, subtitle_input], outputs=output)
-        # 生成字幕
+        # 视频合成字幕
+        subtitle_button.click(use_ffmpeg.add_subtitle, inputs=[file_input, subtitle_content], outputs=output)
+        # 音视频转录文字
         excel_button.click(use_fast_whisper.transcribe, inputs=[file_input, device, model, language,
                                                                 output_format], outputs=[output, subtitle_content])
         # 打开下载文件夹
