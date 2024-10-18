@@ -36,12 +36,6 @@ def join_suffix(folder, file_url):
     return os.path.join(folder, file_url)
 
 
-def get_file_content(file_url):
-    with open(file_url, 'r', encoding='utf-8') as file:
-        content = file.read()
-    return re.split(r'\n\n+', content.strip())
-
-
 # 删除文件
 def del_file(file_path):
     # 检查文件是否存在
@@ -51,7 +45,8 @@ def del_file(file_path):
 
 
 # 保存文本到文件
-def save_text_file(file_name, content):
+def save_text_file(content):
+    file_name = "subtitle.srt"
     # Windows系统中"C盘/下载"文件夹的通用路径
     download_path = os.path.join('C:\\Users', os.getlogin(), 'Downloads')
     # 指定保存的Excel文件路径
@@ -68,9 +63,10 @@ def read_text_file(file):
         return ""
     with open(file.name, "r", encoding="utf-8") as f:
         content = f.read()
-    return content
+    return re.split(r'\n\n+', content.strip())
 
 
+# 获取文件夹下所有文件名称
 def get_chats():
     # 获取当前脚本所在目录，即项目根目录
     project_root = Path(__file__).resolve().parent.parent
@@ -108,8 +104,8 @@ def get_download_folder():
 def open_folder():
     # 获取当前脚本所在的文件夹路径
     # current_folder = os.path.dirname(os.path.abspath(__file__))
-    # Windows系统中"C盘/下载"文件夹的通用路径
-    download_path = os.path.join('C:\\Users', os.getlogin(), 'Downloads')
+    # 获取下载文件夹地址
+    download_path = get_download_folder()
     subprocess.run(['explorer', download_path])
 
 
@@ -125,6 +121,7 @@ def check_folder(target_file):
     return True
 
 
+# 路径判断
 def check_output_path(output_path):
     if output_path is None or output_path == "":
         # output_path为空字符串和None返回faste
@@ -141,34 +138,7 @@ def check_output_path(output_path):
     return True
 
 
-# 保存转录结果为SRT文件
-def out_srt_file(segments, output_srt_file):
-    with open(output_srt_file, "w", encoding="utf-8") as srt_file:
-        for i, segment in enumerate(segments, start=1):
-            start_time = segment['start']
-            end_time = segment['end']
-            start_str = f"{int(start_time // 3600):02d}:{int((start_time % 3600) // 60):02d}:{int(start_time % 60):02d},{int((start_time % 1) * 1000):03d}"
-            end_str = f"{int(end_time // 3600):02d}:{int((end_time % 3600) // 60):02d}:{int(end_time % 60):02d},{int((end_time % 1) * 1000):03d}"
-            subtitle_text = segment["text"].strip()
-            srt_file.write(f"{i}\n")
-            srt_file.write(f"{start_str} --> {end_str}\n")
-            srt_file.write(f"{subtitle_text}\n\n")
-
-
-# 将segments转换为SRT格式
-def segments_to_srt(segments, output_srt_file):
-    with open(output_srt_file, "w", encoding="utf-8") as srt_file:
-        for i, segment in enumerate(segments, start=1):
-            start_time = segment.start
-            end_time = segment.end
-            start_str = f"{int(start_time // 3600):02d}:{int((start_time % 3600) // 60):02d}:{int(start_time % 60):02d},{int((start_time % 1) * 1000):03d}"
-            end_str = f"{int(end_time // 3600):02d}:{int((end_time % 3600) // 60):02d}:{int(end_time % 60):02d},{int((end_time % 1) * 1000):03d}"
-            subtitle_text = segment.text.strip()
-            srt_file.write(f"{i}\n")
-            srt_file.write(f"{start_str} --> {end_str}\n")
-            srt_file.write(f"{subtitle_text}\n\n")
-
-
+# srt转ass并保存到文件
 def srt_to_ass(srt_content, ass_filename, font_size=20):
     # 从SRT字符串中加载字幕
     subs = pysrt.from_string(srt_content)
@@ -193,7 +163,6 @@ Style: Default,Arial,{font_size},&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
-
     with open(ass_filename, 'w', encoding='utf-8-sig') as f:
         # 写入ASS头部
         f.write(ass_header)
@@ -205,6 +174,10 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             start_str = f"{start.hour:01}:{start.minute:02}:{start.second:02}.{int(start.microsecond / 1000):03}"
             end_str = f"{end.hour:01}:{end.minute:02}:{end.second:02}.{int(end.microsecond / 1000):03}"
 
+            # 处理双行或多行字幕
+            text_lines = sub.text.splitlines()
+            formatted_text = r'\N'.join(text_lines)
+
             # 每个字幕条目
-            line = f"Dialogue: 0,{start_str},{end_str},Default,,0,0,0,,{sub.text}\n"
+            line = f"Dialogue: 0,{start_str},{end_str},Default,,0,0,0,,{formatted_text}\n"
             f.write(line)

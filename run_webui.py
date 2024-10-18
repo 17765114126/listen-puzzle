@@ -50,8 +50,8 @@ with gr.Blocks() as open_webui:
                                 config.whisper_language,
                                 value="auto", label="指定语言（若不指定默认会截取 30 秒来判断语种）")
                         # excel_button = gr.Button(value="运行（第一次会下载运行的模型）", variant="primary")
-                advanced_checkbox = gr.Checkbox(label="是否翻译", value=True)
-                with gr.Accordion("翻译设置", open=True):
+                is_translate = gr.Checkbox(label="是否翻译", value=False)
+                with gr.Accordion("翻译设置", open=False):
                     with gr.Row():
                         with gr.Column(scale=1):
                             translator_engine = gr.Dropdown(
@@ -62,7 +62,7 @@ with gr.Blocks() as open_webui:
                                 config.translator_language,
                                 value="zh", label="目标语言")
                         with gr.Column(scale=3):
-                            subtitle_bilingual = gr.Checkbox(label="双语对照")
+                            subtitle_double = gr.Checkbox(label="双语对照", value=False)
                 with gr.Row():
                     excel_button = gr.Button(value="生成字幕文件（第一次会下载模型）", variant="primary")
                     subtitle_button = gr.Button(value="合成字幕", variant="primary")
@@ -73,14 +73,16 @@ with gr.Blocks() as open_webui:
                 subtitle_content = gr.Textbox(label="字幕内容", lines=30, interactive=True)
                 save_button = gr.Button(value="保存文件", variant="primary")
         # 保存文件
-        save_button.click(fn=file_util.save_text_file, inputs=["subtitle.str", subtitle_content], outputs=output)
+
+        save_button.click(fn=file_util.save_text_file, inputs=[subtitle_content], outputs=output)
         # 选中字幕文件 将内容添加到预览
         subtitle_input.change(fn=file_util.read_text_file, inputs=[subtitle_input], outputs=[subtitle_content])
         # 视频合成字幕
         subtitle_button.click(use_ffmpeg.add_subtitle, inputs=[file_input, subtitle_content], outputs=output)
         # 音视频转录文字
         excel_button.click(use_fast_whisper.transcribe, inputs=[file_input, device, model, language,
-                                                                output_format], outputs=[output, subtitle_content])
+                                                                output_format, is_translate,subtitle_double, translator_engine,
+                                                                subtitle_language], outputs=[output, subtitle_content])
         # 打开下载文件夹
         reset_button.click(file_util.open_folder, inputs=[], outputs=[])
         # 下载视频

@@ -49,119 +49,19 @@ def transcribe(audio_path, device_type, model_type, task_type, language_type, ou
             txt_file.write(result["text"])
     # 保存转录结果为SRT文件
     if output_format_type == "srt":
-        file_util.out_srt_file(result["segments"], new_audio_path)
+        out_srt_file(result["segments"], new_audio_path)
     return f"执行成功：文本为：\n" + result["text"]
 
 
-# 设置音频参数
-FORMAT = pyaudio.paInt16  # 16-bit PCM
-CHANNELS = 1  # 单声道
-# RATE = 44100 # 采样率，这里是44.1kHz
-RATE = 16000
-CHUNK = 1024  # 数据块大小
-RECORD_SECONDS = 5  # 录制5秒
-# 初始化pyaudio
-audio = pyaudio.PyAudio()
-
-
-# 音频转文字
-def file_to_text(mp3Url):
-    # 加载模型
-    model = whisper.load_model("small")
-    # result = model.transcribe(mp3Url, language="Chinese")
-    result = model.transcribe(mp3Url)
-    print(", ".join([i["text"] for i in result["segments"] if i is not None]))
-
-
-# 音频数据处理
-def audio_data_dispose(audio_data):
-    # 将音频数据转换为NumPy数组
-    audio_samples = np.frombuffer(b''.join(audio_data), dtype=np.int16)
-
-    # 将音频数据转换为浮点数
-    audio_data_float = librosa.util.buf_to_float(audio_samples, n_bytes=2, dtype=np.float32)
-
-    # # 降噪
-    audio_data_denoised = librosa.effects.remix(audio_data_float,
-                                                intervals=librosa.effects.split(audio_data_float, top_db=20))
-
-    # # Librosa部分：特征提取与判断
-    # y = audio_samples / 32768.0  # 将int16数据归一化至-1~1之间
-    # mfcc = librosa.feature.mfcc(y=y, sr=RATE)
-    #
-    # # 简单的能量阈值判断（实际VAD会更复杂）
-    # energy = np.mean(np.abs(mfcc).flatten())  # 可以选择其他特征能量衡量方式
-    # if energy > THRESHOLD:
-    #     print("可能有人声")
-    # else:
-    #     print("可能无人声或主要是噪音")
-
-    # 如果没有检测到人声，返回空数组
-    # if len(voice_segments) == 0:
-    #     voice_segments = np.array([], dtype=int)
-
-    # 将降噪后的音频数据转换回整数
-    audio_data_denoised_int = np.round(audio_data_denoised * 32767).astype(np.int16)
-    return audio_data_denoised_int
-
-
-def save_file(audio_data):
-    # 音频数据处理
-    audio_data_denoised_int = audio_data_dispose(audio_data)
-    # 保存录制的音频数据
-    with wave.open("output.wav", "wb") as wav_file:
-        wav_file.setnchannels(CHANNELS)
-        wav_file.setsampwidth(audio.get_sample_size(FORMAT))
-        wav_file.setframerate(RATE)
-        wav_file.writeframes(audio_data_denoised_int.tobytes())
-
-
-# 录制音频5秒（一次性）
-def record_audio(stream):
-    # 初始化音频数据列表
-    audio_data = []
-    print("开始录制--------------------")
-    for _ in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
-        data = stream.read(CHUNK)
-        audio_data.append(data)
-    print("结束录制--------------------")
-    # 音频保存为wav文件
-    save_file(audio_data)
-    # 音频文件转文字
-    file_to_text()
-
-
-# 录制音频每5秒转换文字一次
-def for_record_audio(stream):
-    while True:
-        # 初始化音频数据列表
-        audio_data = []
-        print("5秒开始录制--------------------")
-        for _ in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
-            data = stream.read(CHUNK)
-            audio_data.append(data)
-        print("5秒结束录制--------------------")
-        # 音频保存为wav文件
-        save_file(audio_data)
-        # 音频文件转文字
-        file_to_text()
-
-
-def real_time():
-    # 打开音频流
-    stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
-    # 录制音频转化文字
-    record_audio(stream)
-    # 录制音频转化文字每5秒
-    # for_record_audio(stream)
-    # 关闭音频流
-    stream.stop_stream()
-    stream.close()
-    # 关闭pyaudio
-    audio.terminate()
-
-
-if __name__ == '__main__':
-    mp3Url = "G:\\JJ\\3\\output_1.mp3"
-    file_to_text(mp3Url)
-
+# 保存转录结果为SRT文件
+def out_srt_file(segments, output_srt_file):
+    with open(output_srt_file, "w", encoding="utf-8") as srt_file:
+        for i, segment in enumerate(segments, start=1):
+            start_time = segment['start']
+            end_time = segment['end']
+            start_str = f"{int(start_time // 3600):02d}:{int((start_time % 3600) // 60):02d}:{int(start_time % 60):02d},{int((start_time % 1) * 1000):03d}"
+            end_str = f"{int(end_time // 3600):02d}:{int((end_time % 3600) // 60):02d}:{int(end_time % 60):02d},{int((end_time % 1) * 1000):03d}"
+            subtitle_text = segment["text"].strip()
+            srt_file.write(f"{i}\n")
+            srt_file.write(f"{start_str} --> {end_str}\n")
+            srt_file.write(f"{subtitle_text}\n\n")

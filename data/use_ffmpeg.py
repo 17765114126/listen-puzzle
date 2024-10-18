@@ -1,11 +1,9 @@
 import ffmpeg
 import os
 import subprocess
-from util import file_util, tools
+from util import file_util
 import config
 from pathlib import Path
-import time
-import textwrap
 import sys
 
 
@@ -264,7 +262,7 @@ def add_subtitle(video_path, subtitle_content, subtitle_type=1, maxlen=50):
         else:
             # 软字幕
             srt_file = f'{name}.srt'
-            file_util.save_text_file(srt_file, subtitle_content)
+            file_util.save_text_file(subtitle_content)
             cmd += [
                 '-i', srt_file,
                 '-c:v', 'copy' if Path(video_path).suffix.lower() == '.mp4' else 'libx264',
@@ -297,7 +295,6 @@ if __name__ == '__main__':
     input_subtitle_path = "D:/abm/abm.srt"
     # output_video = "D:/output111.mp4"
     # output_video = "D:/abm/final"
-    # add_subtitle(input_video_path, input_subtitle_path, output_video)
     add_subtitle(input_video_path, input_subtitle_path, 50)
     # # get_info(input_video_path)
     # start_time = '00:00:30'
