@@ -15,19 +15,6 @@ import config
 
 # 创建gradio页面
 with gr.Blocks() as open_webui:
-    with gr.Tab("视频下载"):
-        with gr.Row():
-            video_url = gr.Textbox(lines=3, placeholder="请输入Youtube或Bilibili的视频、播放列表或频道的URL",
-                                   label="视频URL")
-            resolution = gr.Dropdown(config.resolution, value="1080p", label="分辨率")
-            folder_path = gr.Textbox(lines=3, placeholder="默认下载文件夹",
-                                     label="输出文件夹")
-            with gr.Row():
-                video_run = gr.Button(value="运行", variant="primary")
-                reset_button = gr.Button(value="打开下载文件夹", variant="primary")
-            with gr.Row():
-                video_output = gr.Textbox(lines=3, placeholder="", label="运行状态")
-
     with gr.Tab("字幕翻译"):
         with gr.Row():
             with gr.Column():
@@ -63,8 +50,11 @@ with gr.Blocks() as open_webui:
                                 value="zh", label="目标语言")
                         with gr.Column(scale=3):
                             subtitle_double = gr.Checkbox(label="双语对照", value=False)
+                excel_button = gr.Button(value="生成字幕文件（第一次会下载模型）", variant="primary")
                 with gr.Row():
-                    excel_button = gr.Button(value="生成字幕文件（第一次会下载模型）", variant="primary")
+                    with gr.Accordion("字幕设置", open=False):
+                        is_soft = gr.Checkbox(label="软字幕", value=False)
+                        font_size = gr.Number(label="字幕大小", value=16)
                     subtitle_button = gr.Button(value="合成字幕", variant="primary")
 
             with gr.Column(variant="panel", elem_classes="right-column"):
@@ -73,16 +63,30 @@ with gr.Blocks() as open_webui:
                 subtitle_content = gr.Textbox(label="字幕内容", lines=30, interactive=True)
                 save_button = gr.Button(value="保存文件", variant="primary")
         # 保存文件
-
         save_button.click(fn=file_util.save_text_file, inputs=[subtitle_content], outputs=output)
         # 选中字幕文件 将内容添加到预览
         subtitle_input.change(fn=file_util.read_text_file, inputs=[subtitle_input], outputs=[subtitle_content])
         # 视频合成字幕
-        subtitle_button.click(use_ffmpeg.add_subtitle, inputs=[file_input, subtitle_content], outputs=output)
+        subtitle_button.click(use_ffmpeg.add_subtitle, inputs=[file_input, subtitle_content, is_soft, font_size],
+                              outputs=output)
         # 音视频转录文字
         excel_button.click(use_fast_whisper.transcribe, inputs=[file_input, device, model, language,
-                                                                output_format, is_translate,subtitle_double, translator_engine,
+                                                                output_format, is_translate, subtitle_double,
+                                                                translator_engine,
                                                                 subtitle_language], outputs=[output, subtitle_content])
+
+    with gr.Tab("视频下载"):
+        with gr.Row():
+            video_url = gr.Textbox(lines=3, placeholder="请输入Youtube或Bilibili的视频、播放列表或频道的URL",
+                                   label="视频URL")
+            resolution = gr.Dropdown(config.resolution, value="1080p", label="分辨率")
+            folder_path = gr.Textbox(lines=3, placeholder="默认下载文件夹",
+                                     label="输出文件夹")
+            with gr.Row():
+                video_run = gr.Button(value="运行", variant="primary")
+                reset_button = gr.Button(value="打开下载文件夹", variant="primary")
+            with gr.Row():
+                video_output = gr.Textbox(lines=3, placeholder="", label="运行状态")
         # 打开下载文件夹
         reset_button.click(file_util.open_folder, inputs=[], outputs=[])
         # 下载视频

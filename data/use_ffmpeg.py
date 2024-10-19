@@ -221,75 +221,77 @@ def split_video_into_segments(input_video, segment_length, output_prefix):
         start_time += segment_length
 
 
-# 遍历文件夹下所有文件
-def beach():
-    file = f'G:\\video\\m'
-
-    for root, dirs, files in os.walk(file):
-        for file in files:
-            path = os.path.join(root, file)
-            # video_to_audio(path, path[:-1]+'3')
-            # 提取音频: -vn表示去掉视频，-c:a copy表示不改变音频编码，直接拷贝。
-            # os.system("ffmpeg -i " + path + " -vn -c:a copy "+path[:-4]+".aac")
-            # 下面是 mp4 转 webm 的写法。
-            os.system("ffmpeg -i " + path + " -c copy " + path[:-4] + ".mp3")
-            print(path[:-1] + '3')
-    pass
-
-
 # 视频添加字幕
-def add_subtitle(video_path, subtitle_content, subtitle_type=1, maxlen=50):
+def add_subtitle(video_path, subtitle_content, subtitle_type, fontsize=20):
     try:
-        cmd = [config.FFMPEG_BIN, "-hide_banner", "-ignore_unknown"]
-        cmd += [
-            '-y',
-            '-i',
-            os.path.normpath(video_path)
-        ]
+        cmd = [config.FFMPEG_BIN, "-hide_banner", "-ignore_unknown",
+               '-y',
+               '-i',
+               os.path.normpath(video_path)
+               ]
         output_video = file_util.get_download_folder()
         # 获取文件名称
         name = file_util.get_file_name_no_suffix(video_path)
-        if subtitle_type == 1:
-            # 硬字幕
-            ass_file = f'{name}.ass'
-            file_util.srt_to_ass(subtitle_content, ass_file, maxlen)
-            cmd += [
-                '-c:v', 'libx264',
-                '-vf', f"subtitles={ass_file}",
-                '-crf', '13',
-                '-preset', "slow",
-                '-vsync', 'vfr',  # 确保视频同步
-                '-async', '1'  # 确保音频同步
-            ]
-        else:
+        srt_file = f'{name}.srt'
+        # 保存str文件
+        with open(srt_file, "w", encoding="utf-8") as file:
+            file.write(subtitle_content)
+
+        if subtitle_type:
             # 软字幕
-            srt_file = f'{name}.srt'
-            file_util.save_text_file(subtitle_content)
             cmd += [
                 '-i', srt_file,
                 '-c:v', 'copy' if Path(video_path).suffix.lower() == '.mp4' else 'libx264',
                 '-c:s', 'mov_text',
                 '-metadata:s:s:0', 'language=chi'  # 设置字幕语言，例如中文
             ]
-
-        cmd.append(output_video + f'/{name}.mp4')
-        try:
-            subprocess.run(cmd,
-                           stdout=subprocess.PIPE,
-                           stderr=subprocess.STDOUT,
-                           text=True,
-                           # encoding="utf-8",
-                           # check=True,
-                           # creationflags=0 if sys.platform != 'win32' else subprocess.CREATE_NO_WINDOW
-            )
-        except subprocess.CalledProcessError as e:
-            print("An error occurred while running the command.")
-            print(f"Command: {e.cmd}")
-            print(f"Return code: {e.returncode}")
-            print(f"Output: {e.output}")
-        return "合成成功"
+        else:
+            # 硬字幕
+            ass_file = f'{name}.ass'
+            # 字幕文件SRT转ASS
+            str_to_ass(srt_file, ass_file)
+            # 设置ass字体格式
+            file_util.set_ass_font(ass_file, fontsize)
+            cmd += [
+                '-c:v', 'libx264',
+                '-vf', f"subtitles={ass_file}",
+                '-crf', '13',
+                '-preset', "slow"
+            ]
+        output_video = output_video + f'/{name}.mp4'
+        cmd.append(output_video)
+        run_cmd(cmd)
+        file_util.del_file(srt_file)
+        file_util.del_file(ass_file)
+        return f"合成字幕成功,视频所在地址：{output_video}"
     except Exception as e:
         print(e)
+
+
+# 字幕文件SRT转ASS
+def str_to_ass(srt_file, ass_file):
+    run_cmd([config.FFMPEG_BIN, '-hide_banner', '-ignore_unknown',
+             '-y',
+             '-i',
+             f'{srt_file}',
+             f'{ass_file}'])
+
+
+def run_cmd(cmd):
+    try:
+        subprocess.run(cmd,
+                       stdout=subprocess.PIPE,
+                       stderr=subprocess.STDOUT,
+                       text=True,
+                       encoding="utf-8",
+                       check=True,
+                       creationflags=0 if sys.platform != 'win32' else subprocess.CREATE_NO_WINDOW
+                       )
+    except subprocess.CalledProcessError as e:
+        print("An error occurred while running the command.")
+        print(f"Command: {e.cmd}")
+        print(f"Return code: {e.returncode}")
+        print(f"Output: {e.output}")
 
 
 if __name__ == '__main__':
