@@ -48,8 +48,8 @@ def transcribe(audio_path, device_type, model_type, language_type, output_format
                     # 双语字幕
                     segments_txt += f"{subtitle_text}\n"
                 # 翻译
-                segments_txt += use_translation.translator_response(subtitle_text, subtitle_language,
-                                                                    translator_engine) + "\n\n"
+                segments_txt += use_translation.translator_build(subtitle_text, subtitle_language,
+                                                                 translator_engine) + "\n\n"
             else:
                 # 原文
                 segments_txt += f"{subtitle_text}\n\n"

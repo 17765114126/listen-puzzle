@@ -1,59 +1,80 @@
 import os
 import yt_dlp
-from util import file_util
+from util.file_util import sanitize_title, get_download_folder
 
 
-def download_single_video(info, folder_path, resolution='1080p'):
-    series = file_util.sanitize_title(info.get('series', ""))
-    season = file_util.sanitize_title(info.get('season', ""))
-    title = file_util.sanitize_title(info['title'])
-    resolution = resolution.replace('p', '')
+def download_video(info, output_dir, resolution='1080p'):
+    """
+    下载单个视频，并将其保存到指定目录。
+
+    :param info: 包含视频信息的字典
+    :param output_dir: 视频输出目录
+    :param resolution: 分辨率，默认为'1080p'
+    :return: 输出目录路径
+    """
+    # 清理标题中的非法字符
+    series = sanitize_title(info.get('series', ""))
+    season = sanitize_title(info.get('season', ""))
+    title = sanitize_title(info['title'])
+
+    # 准备下载选项
     ydl_opts = {
         'format': f'bestvideo[ext=mp4][height<={resolution}]+bestaudio[ext=m4a]/best[ext=mp4]/best',
         'writeinfojson': True,
         'writethumbnail': True,
-        'outtmpl': os.path.join(folder_path, series + season + title),
+        'outtmpl': os.path.join(output_dir, f"{series}{season}{title}.%(ext)s"),
         'ignoreerrors': True,
         'cookiefile': 'cookies.txt' if os.path.exists("cookies.txt") else None,
     }
 
+    # 执行下载
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download([info['webpage_url']])
-    return folder_path
+    return output_dir
 
 
-def download_from_url(video_url, folder_path, resolution='1080p', num_videos=5):
-    if folder_path is None or folder_path == "":
-        folder_path = file_util.get_download_folder()
-    resolution = resolution.replace('p', '')
-    if isinstance(video_url, str):
-        video_url = [video_url]
+def download_videos_from_urls(urls, resolution='1080p', limit=5):
+    """
+    从给定的URL列表中下载视频。
 
-    # Download JSON information first
-    ydl_opts = {
-        "None": "b",
-        'dumpjson': True,
-        'playlistend': num_videos,
+    :param urls: 单个或多个视频/播放列表的URL列表
+    :param resolution: 目标分辨率，默认为'1080p'
+    :param limit: 如果是播放列表，则限制下载的视频数量
+    :return: 下载文件夹路径的消息
+    """
+    # 将通过竖线分隔的字符串转换为列表
+    url_list = [url.strip() for url in urls.split('|') if url.strip()]
+    # 获取默认下载目录
+    download_directory = get_download_folder()
+
+    # 设置用于提取视频信息的选项
+    extraction_options = {
+        'dump_single_json': True,
+        'playlistend': limit,
         'ignoreerrors': True,
-        'cookies-from-browser': 'chrome'
+        'cookies_from_browser': 'chrome'
     }
 
+    # 收集所有要下载的视频信息
     video_info_list = []
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        for u in video_url:
-            result = ydl.extract_info(u, download=False)
+    with yt_dlp.YoutubeDL(extraction_options) as ydl:
+        for url in url_list:
+            result = ydl.extract_info(url, download=False)
             if 'entries' in result:
-                # Playlist
+                # 如果结果包含条目，说明这是个播放列表
                 video_info_list.extend(result['entries'])
             else:
-                # Single video
+                # 否则，它是单个视频
                 video_info_list.append(result)
-    for info in video_info_list:
-        download_single_video(info, folder_path, resolution)
-    return f"视频下载成功，下载地址为： {folder_path}"
+
+    # 对于每个视频信息，调用download_video进行下载
+    for video_info in video_info_list:
+        download_video(video_info, download_directory, resolution)
+
+    return f"视频下载成功，下载地址为：{download_directory}"
 
 
 if __name__ == '__main__':
     # Bilbili Title 奥巴马开学演讲，纯英文字幕
     video_url = 'https://www.bilibili.com/video/BV1Tt411P72Q/'
-    download_from_url(video_url, file_util.get_download_folder())
+    download_videos_from_urls(video_url)
