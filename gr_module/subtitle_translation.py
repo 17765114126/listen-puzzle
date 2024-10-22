@@ -3,7 +3,6 @@ from data import use_fast_whisper, use_ffmpeg
 from util import file_util
 import config
 
-
 # def set_function(selected_type,file_input, device, model, task, language, output_format):
 #     try:
 #         if selected_type == "faster_whisper":
@@ -12,6 +11,7 @@ import config
 #             return use_whisper.transcribe(file_input, device, model, task, language, output_format)
 #     except Exception as e:
 #         return "报错：" + str(e)
+
 
 def subtitle_translation():
     with gr.Row():
@@ -56,12 +56,12 @@ def subtitle_translation():
                 subtitle_button = gr.Button(value="合成字幕", variant="primary")
 
         with gr.Column(variant="panel", elem_classes="right-column"):
-            output = gr.Textbox(lines=3, placeholder="", label="运行状态")
+            output = gr.Textbox(lines=1, placeholder="", label="运行状态")
             # reset_button = gr.Button(value="打开下载文件夹", variant="primary")
             # # 打开下载文件夹
             # reset_button.click(file_util.open_folder, inputs=[], outputs=[])
             gr.Markdown(value="字幕文件预览")
-            subtitle_content = gr.Textbox(label="字幕内容", lines=30, interactive=True)
+            subtitle_content = gr.Textbox(label="字幕内容", lines=24, interactive=True)
             save_button = gr.Button(value="保存文件", variant="primary")
     # 保存文件
     save_button.click(fn=file_util.save_text_file, inputs=[subtitle_content], outputs=output)

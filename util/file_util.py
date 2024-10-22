@@ -62,7 +62,7 @@ def read_text_file(file):
         return ""
     with open(file.name, "r", encoding="utf-8") as f:
         content = f.read()
-    return re.split(r'\n\n+', content.strip())
+    return content
 
 
 # 获取文件夹下所有文件名称
