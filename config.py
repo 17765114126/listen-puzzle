@@ -94,12 +94,9 @@ else:
     if Path(ROOT_DIR + '/ffmpeg/ffprobe').is_file():
         FFPROBE_BIN = ROOT_DIR + '/ffmpeg/ffprobe'
 
-os.environ['QT_API'] = 'pyside6'
-os.environ['SOFT_NAME'] = 'pyvideotrans'
+# os.environ['QT_API'] = 'pyside6'
+# os.environ['SOFT_NAME'] = 'pyvideotrans'
 
-#################################################
-# 主界面完整流程状态标识：开始按钮状态 ing 执行中，stop手动停止 end 正常结束
-current_status = "stop"
 #####################################
 resolution = [
     "4320p",
@@ -113,7 +110,7 @@ resolution = [
     "144p"
 ]
 # 支持的视频格式
-video_type = ["mp4", "avi", "flv", "mkv", "mpeg", "mov"]
+video_type = ["mp4", "avi", "flv", "mkv", "mpeg"]
 # 支持的音频格式
 audio_type = ["mp3", "wav", "aac", "flac", "m4a"]
 whisper_model = [

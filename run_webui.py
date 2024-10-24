@@ -2,6 +2,7 @@ import gradio as gr
 from gr_module.subtitle_translation import subtitle_translation
 from gr_module.video_processing import video_processing
 from gr_module.setting import setting
+from util import file_util
 
 # 创建gradio页面
 with gr.Blocks() as open_webui:
@@ -17,4 +18,4 @@ if __name__ == '__main__':
                       server_port=9528,
                       inbrowser=True,
                       favicon_path="./static/icon.ico",
-                      allowed_paths=["C:\\Users\\17765\\Downloads"])
+                      allowed_paths=[file_util.get_download_folder()])
