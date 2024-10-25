@@ -1,5 +1,5 @@
 # 模型下载
-# from modelscope import snapshot_download
+
 import subprocess
 
 

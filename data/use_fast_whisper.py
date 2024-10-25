@@ -11,12 +11,12 @@ def transcribe(audio_path, device_type, model_type, language_type, output_format
         language_type = None
     # 指定模型文件的路径
     # model_path = "D:\\opt\\faster-whisper\\" + model_type
-    model_path = "C:/Users/" + os.getlogin() + "/.cache/modelscope/hub/pengzhendong/faster-whisper" + "-" + model_type
-    if not file_util.check_folder(os.path.join(model_path, "model.bin")):
-        download_model.download_model(model_type)
-        return f"正在下载模型{model_path}，请下载完毕后重试(可在控制台查看下载进度)"
+    # model_path = "C:/Users/" + os.getlogin() + "/.cache/modelscope/hub/pengzhendong/faster-whisper" + "-" + model_type
+    # if not file_util.check_folder(os.path.join(model_path, "model.bin")):
+    #     download_model.download_model(model_type)
+    #     return f"正在下载模型{model_path}，请下载完毕后重试(可在控制台查看下载进度)"
     # 加载模型
-    model = WhisperModel(model_path, device=device_type, compute_type="int8")
+    model = WhisperModel(model_type, device=device_type, compute_type="int8")
     segments, info = model.transcribe(audio_path, beam_size=5, task="transcribe", language=language_type)
 
     # txt文件
