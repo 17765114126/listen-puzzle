@@ -93,7 +93,7 @@ def get_download_folder():
         download_folder = os.path.join(os.path.expanduser('~'), 'Downloads')
     else:
         raise OSError("Unsupported operating system")
-    return download_folder
+    return download_folder + "/"
 
 
 # 打开文件夹

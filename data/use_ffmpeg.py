@@ -1,6 +1,7 @@
 import os
 import subprocess
-from util import file_util
+from util.file_util import get_download_folder, get_file_name, get_file_suffix, get_file_name_no_suffix, set_ass_font, \
+    del_file
 import config
 from pathlib import Path
 import sys
@@ -9,8 +10,7 @@ import json
 
 # 设置封面
 def set_video_cover(input_video, cover_image):
-    output_path = file_util.get_file_name_no_suffix(input_video) + "（封面）" + file_util.get_file_suffix(input_video)
-
+    output_path = get_download_folder() + get_file_name_no_suffix(input_video) + "(封面)" + get_file_suffix(input_video)
     command = [
         '-i', input_video,  # 输入视频文件
         '-i', cover_image,  # 封面图片文件
@@ -26,7 +26,9 @@ def set_video_cover(input_video, cover_image):
 
 
 # 获取指定秒的第一帧
-def extract_frame(input_video, output_image_path, time_ss):
+def extract_frame(input_video, time_ss):
+    output_image_path = get_download_folder() + get_file_name_no_suffix(input_video) + "(图).png"
+
     command = [
         '-i', input_video,  # 输入视频文件
         '-ss', time_ss,  # 指定开始时间（HH:MM:SS格式）
@@ -34,6 +36,7 @@ def extract_frame(input_video, output_image_path, time_ss):
         output_image_path  # 输出图像文件
     ]
     run_ffmpeg_cmd(command)
+    return "图片提取成功"
 
 
 # 获取指定时间段内每秒的第一帧
@@ -60,18 +63,17 @@ def extract_frames(input_video_path, output_dir, start_time, end_time):
 
 
 # 生成gif文件
-def video_to_gif(input_video_path, output_gif_path, start_time=None, duration=None, fps=10, scale='320:-1'):
+def video_to_gif(input_video, start_time=None, duration=None, fps=10, scale='320:-1'):
     # 可选参数
     # input_video_path = 'path/to/your/input_video.mp4'
-    # output_gif_path = 'path/to/your/output_animation.gif'
     # start_time = '00:00:05'  # 开始时间（HH:MM:SS格式），例如从第5秒开始
     # duration = '00:00:10'  # 持续时间（HH:MM:SS格式），例如10秒
     # fps = 10  # 帧率，每秒10帧
     # scale = '320:-1'  # 缩放比例，宽度320像素，高度按比例缩放
+    output_gif_path = get_download_folder() + get_file_name_no_suffix(input_video) + ".gif"
     command = [
-        '-i', input_video_path,  # 输入视频文件
+        '-i', input_video,  # 输入视频文件
     ]
-
     if start_time:
         command.extend(['-ss', start_time])  # 指定开始时间（可选）
 
@@ -150,7 +152,7 @@ def get_info(video_path):
     duration = float(format_info.get('duration', 0))
     overall_bitrate = format_info.get('bit_rate')
 
-    video_info += f"文件名: {file_util.get_file_name(filename)}\n"
+    video_info += f"文件名: {get_file_name(filename)}\n"
     video_info += f"时长: {duration:.2f}秒\n"
     if overall_bitrate:
         video_info += f"总比特率: {int(overall_bitrate) / 1000:.2f} kbps\n"
@@ -181,7 +183,7 @@ def get_info(video_path):
 
 # 提取音频
 def get_audio(video_path, audio_type=".mp3"):
-    audio_output_path = file_util.get_file_name_no_suffix(video_path) + audio_type
+    audio_output_path = get_file_name_no_suffix(video_path) + "." + audio_type
     command = [
         '-i', video_path,  # 输入文件
         '-q:a', '0',  # 音频质量（0是最好的）
@@ -194,7 +196,7 @@ def get_audio(video_path, audio_type=".mp3"):
 
 # 提取视频
 def get_video(video_path, video_type="mp4"):
-    output_path = file_util.get_file_name_no_suffix(video_path) + "（无音频）" + video_type
+    output_path = get_file_name_no_suffix(video_path) + "(无音频)." + video_type
     command = [
         '-i', video_path,  # 输入文件
         '-c:v', 'copy',  # 复制视频编码，不进行重新编码
@@ -207,7 +209,7 @@ def get_video(video_path, video_type="mp4"):
 
 # # 添加音频
 def add_audio_to_video(video_path, audio_path):
-    output_path = file_util.get_file_name_no_suffix(video_path) + "（合并）" + file_util.get_file_suffix(video_path)
+    output_path = get_file_name_no_suffix(video_path) + "（合并音频）" + get_file_suffix(video_path)
     command = [
         '-i', video_path,  # 输入视频文件
         '-i', audio_path,  # 输入音频文件
@@ -223,10 +225,12 @@ def add_audio_to_video(video_path, audio_path):
 
 
 # 音量调整
-def adjust_audio_volume(video_path, output_path, volume_factor):
+def adjust_audio_volume(input_video, volume_factor):
+    output_path = get_download_folder() + get_file_name_no_suffix(input_video) + "(音量)" + get_file_suffix(input_video)
+
     # volume_factor：1.5表示将音量提高50%，0.5表示将音量降低50%
     command = [
-        '-i', video_path,  # 输入视频文件
+        '-i', input_video,  # 输入视频文件
         '-filter_complex', f'[0:a]volume={volume_factor}[a]',  # 应用音量调整滤镜
         '-map', '0:v:0',  # 映射第一个输入的第一个视频流
         '-map', '[a]',  # 映射经过处理后的音频流
@@ -235,10 +239,10 @@ def adjust_audio_volume(video_path, output_path, volume_factor):
         output_path  # 输出文件
     ]
     run_ffmpeg_cmd(command)
-
+    return "操作成功，文件地址为：" + output_path
 
 # 调整视频分辨率
-def change_resolution(input_path, output_path, width, height):
+def change_resolution(input_video, width, height):
     # 480p (标清, SD)
     # 分辨率: 640x480
     # 宽高比: 4:3 或 16:9（取决于内容）
@@ -260,8 +264,11 @@ def change_resolution(input_path, output_path, width, height):
     # 4320p (8K UHD)
     # 分辨率: 7680x4320
     # 宽高比: 16:9
+    output_path = get_download_folder() + get_file_name_no_suffix(input_video) + "(分辨率)" + get_file_suffix(
+        input_video)
+
     command = [
-        '-i', input_path,  # 输入文件
+        '-i', input_video,  # 输入文件
         '-vf', f'scale={width}:{height}',  # 视频过滤器：调整分辨率
         '-c:a', 'copy',  # 复制音频流，不重新编码
         output_path  # 输出文件
@@ -271,11 +278,13 @@ def change_resolution(input_path, output_path, width, height):
 
 
 # 控制速度
-def speed_video(input_path, output_path, speed_factor):
+def speed_video(input_video, speed_factor):
+    output_path = get_download_folder() + get_file_name_no_suffix(input_video) + "(速度)" + get_file_suffix(input_video)
+
     # atempo滤镜支持的最大范围是0.5到2.0
     # speed_factor 减慢0.5倍或加快2倍
     command = [
-        '-i', input_path,  # 输入文件
+        '-i', input_video,  # 输入文件
         '-filter_complex', f'[0:v]setpts={1 / speed_factor}*PTS[v];[0:a]atempo={speed_factor}[a]',  # 设置视频和音频的速度
         '-map', '[v]',  # 映射视频流
         '-map', '[a]',  # 映射音频流
@@ -302,7 +311,7 @@ def convert_video_format(input_path, video_type):
 
     avg_bitrate = int(float(video_stream.get('bit_rate', 0)) / 1000)  # 转换为Kbps
 
-    output_path = file_util.get_download_folder() + "/" + file_util.get_file_name_no_suffix(
+    output_path = get_download_folder() + get_file_name_no_suffix(
         input_path) + "." + video_type
 
     command = [
@@ -362,8 +371,8 @@ def cut_video(input_path, start_time, end_time=None, duration=None):
     # duration = '00:00:20'
     # 或者从第10秒开始，到第30秒结束
     # end_time = '00:00:30'
-    output_path = file_util.get_download_folder() + "/" + file_util.get_file_name_no_suffix(
-        input_path) + "(剪切)." + file_util.get_file_suffix(input_path)
+    output_path = get_download_folder() + get_file_name_no_suffix(
+        input_path) + "(剪切)" + get_file_suffix(input_path)
     command = [
         '-i', input_path,  # 输入视频文件
         '-ss', start_time,  # 开始时间
@@ -372,11 +381,11 @@ def cut_video(input_path, start_time, end_time=None, duration=None):
     ]
 
     if duration:
-        command.insert(3, '-t')
-        command.insert(4, duration)
+        command.insert(4, '-t')
+        command.insert(5, duration)
     elif end_time:
-        command.insert(3, '-to')
-        command.insert(4, end_time)
+        command.insert(4, '-to')
+        command.insert(5, end_time)
     run_ffmpeg_cmd(command)
     return "视频剪切完成，文件地址为：" + output_path
 
@@ -390,9 +399,9 @@ def add_subtitle(video_path, subtitle_content, subtitle_type, fontsize=20):
                '-i',
                os.path.normpath(video_path)
                ]
-        output_video = file_util.get_download_folder()
+        output_video = get_download_folder()
         # 获取文件名称
-        name = file_util.get_file_name_no_suffix(video_path)
+        name = get_file_name_no_suffix(video_path)
         srt_file = f'{name}.srt'
         # 保存str文件
         with open(srt_file, "w", encoding="utf-8") as file:
@@ -412,18 +421,18 @@ def add_subtitle(video_path, subtitle_content, subtitle_type, fontsize=20):
             # 字幕文件SRT转ASS
             str_to_ass(srt_file, ass_file)
             # 设置ass字体格式
-            file_util.set_ass_font(ass_file, fontsize)
+            set_ass_font(ass_file, fontsize)
             cmd += [
                 '-c:v', 'libx264',
                 '-vf', f"subtitles={ass_file}",
                 '-crf', '13',
                 '-preset', "slow"
             ]
-        output_video = output_video + f'/{name}.mp4'
+        output_video = output_video + f'{name}.mp4'
         cmd.append(output_video)
         run_ffmpeg_cmd(cmd)
-        file_util.del_file(srt_file)
-        file_util.del_file(ass_file)
+        del_file(srt_file)
+        del_file(ass_file)
         return f"合成字幕成功,文件地址为：{output_video}"
     except Exception as e:
         print(e)
@@ -448,6 +457,7 @@ def run_ffmpeg_cmd(cmd):
         # if check_cuda_support():
         #     command.extend(['-hwaccel', 'cuda'])
         command.extend(cmd)
+        print(command)
         result = subprocess.run(command,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT,

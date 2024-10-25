@@ -71,7 +71,7 @@ def download_videos_from_urls(urls, resolution='1080p', limit=5):
     for video_info in video_info_list:
         download_video(video_info, download_directory, resolution)
     title = sanitize_title(video_info_list[0]['title'])
-    video_url = download_directory + "\\" + title + ".mp4"
+    video_url = download_directory + title + ".mp4"
     print(video_url)
     return f"视频下载成功，下载地址为：{download_directory}", video_url
 
