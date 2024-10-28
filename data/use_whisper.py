@@ -1,10 +1,10 @@
 import whisper
 import os
-from util import file_util
-import pyaudio
-import wave
-import numpy as np
-import librosa
+# from util import file_util
+# import pyaudio
+# import wave
+# import numpy as np
+# import librosa
 
 
 # 转录语音为文字

@@ -1,14 +1,12 @@
+# 生成一个 requirements.txt，在项目根目录下运行：pipreqs .
+pipreqs
 faster_whisper==1.0.1
-gradio==5.0.1
+gradio==5.4.0
 # openai_whisper==20231117
 numpy<2
 requests==2.32.3
 sounddevice==0.4.7
-modelscope
-ffmpeg-python==0.2.0
-yt-dlp==2024.8.6d
-translators
+yt_dlp==2024.10.22
+translators==5.9.3
 pysrt
-
-# scipy
-# demucs
+edge_tts==6.1.14
