@@ -9,4 +9,4 @@ sounddevice==0.4.7
 yt_dlp==2024.10.22
 translators==5.9.3
 pysrt
-edge_tts==6.1.14
+edge_tts==6.1.13

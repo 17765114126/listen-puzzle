@@ -118,7 +118,7 @@ whisper_model = [
     "base",
     "small",
     "medium",
-    "large"
+    "large-v3"
 ]
 whisper_device = ["cpu", "cuda"]
 whisper_language = [

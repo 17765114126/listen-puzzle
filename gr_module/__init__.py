@@ -4,7 +4,7 @@ import os
 
 # 代码中设置代理和模型下载路径(需要放在最上面，否则不起作用)
 os.environ['HF_ENDPOINT'] = "https://hf-mirror.com/"
-os.environ['HF_HOME'] = 'D:/develop/hf-model'
+os.environ['HF_HOME'] = 'D:/hf-model'
 
 # 临时设置
 # 在terminal窗口中运行：
