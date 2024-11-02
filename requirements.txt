@@ -1,5 +1,5 @@
 # 生成一个 requirements.txt，在项目根目录下运行：pipreqs .
-pipreqs
+#pipreqs
 faster_whisper==1.0.1
 gradio==5.4.0
 # openai_whisper==20231117
@@ -10,3 +10,4 @@ yt_dlp==2024.10.22
 translators==5.9.3
 pysrt
 edge_tts==6.1.13
+audio_separator

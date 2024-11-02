@@ -3,11 +3,14 @@ from util import file_util
 from gr_module.subtitle_translation import subtitle_translation
 from gr_module.video_processing import video_processing
 from gr_module.setting import setting
+from gr_module.webui_dh_live import webui_dh_live
 
 # 创建gradio页面
 with gr.Blocks() as open_webui:
     with gr.Tab("视频处理"):
         video_processing()
+    with gr.Tab("音频处理"):
+        webui_dh_live()
     with gr.Tab("字幕翻译"):
         subtitle_translation()
     with gr.Tab("设置"):
