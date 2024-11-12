@@ -11,3 +11,4 @@ translators==5.9.3
 pysrt
 edge_tts==6.1.13
 audio_separator
+xxhash

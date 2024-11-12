@@ -4,6 +4,7 @@ from gr_module.subtitle_translation import subtitle_translation
 from gr_module.video_processing import video_processing
 from gr_module.setting import setting
 from gr_module.webui_dh_live import webui_dh_live
+from gr_module.tool import tool
 
 # 创建gradio页面
 with gr.Blocks() as open_webui:
@@ -15,6 +16,8 @@ with gr.Blocks() as open_webui:
         subtitle_translation()
     with gr.Tab("设置"):
         setting()
+    with gr.Tab("小工具"):
+        tool()
 
 
 def run():
