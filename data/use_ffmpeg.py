@@ -1,11 +1,154 @@
 import os
 import subprocess
-from util.file_util import get_download_folder, get_file_name, get_file_suffix, get_file_name_no_suffix, set_ass_font, \
-    del_file
+from data.util.file_util import get_download_folder, get_file_name, get_file_suffix, get_file_name_no_suffix, \
+    set_ass_font, del_file
 import config
 from pathlib import Path
 import sys
 import json
+from data.util import file_util
+
+
+def process_video(input_path, output_path=None,
+                  start_time=None, end_time=None, duration=None,
+                  speed_factor=None, volume_factor=None,
+                  width=None, height=None,
+                  cover_image=None,
+                  output_format='mp4'):
+    print(speed_factor)
+    print(volume_factor)
+    if speed_factor is None:
+        speed_factor = 1.0
+    if volume_factor is None:
+        volume_factor = 1.0
+    """
+    综合视频处理方法（剪切/调速/分辨率/音量/封面/格式转换）
+
+    参数说明：
+    - input_path: 输入文件路径
+    - output_path: 输出路径（默认自动生成）
+    - start_time/end_time/duration: 时间剪切参数（格式：HH:MM:SS）
+    - speed_factor: 播放速度（默认1.0不变，0.5=减速一半，2.0=加速2倍）
+    - volume_factor: 音量倍数（默认1.0不变）
+    - width/height: 目标分辨率（默认保持原分辨率）
+    - cover_image: 封面图片路径（默认不加封面）
+    - output_format: 输出格式（默认mp4）
+    """
+    # 基础命令
+    cmd = [
+        'ffmpeg',
+        '-hide_banner',
+        '-y'  # 覆盖输出文件
+    ]
+
+    # 添加时间剪切参数
+    if start_time:
+        cmd.extend(['-ss', start_time])
+
+    # 输入文件
+    cmd.extend(['-i', input_path])
+
+    # 封面图片处理
+    if cover_image:
+        cmd.extend(['-i', cover_image])
+
+    # 构建滤镜链
+    video_filters = []
+    audio_filters = []
+
+    # 速度调整
+    if speed_factor != 1.0:
+        video_filters.append(f"setpts={1 / speed_factor}*PTS")
+        audio_filters.append(f"atempo={speed_factor}")
+
+    # 分辨率调整
+    if width and height:
+        video_filters.append(f"scale={width}:{height}")
+
+    # 音量调整
+    if volume_factor != 1.0:
+        audio_filters.append(f"volume={volume_factor}")
+
+        # 构建滤镜链
+    filter_complex = []
+    need_filter = False  # 新增判断标志
+
+    # 视频处理分支
+    video_stream = '0:v'
+    if speed_factor != 1.0 or (width and height):
+        video_filters = []
+        if speed_factor != 1.0:
+            video_filters.append(f"setpts={1 / speed_factor}*PTS")
+        if width and height:
+            video_filters.append(f"scale={width}:{height}")
+        filter_complex.append(f"[0:v]{','.join(video_filters)}[vout]")
+        video_stream = "[vout]"
+        need_filter = True
+
+    # 音频处理分支
+    audio_stream = '0:a'
+    if speed_factor != 1.0 or volume_factor != 1.0:
+        audio_filters = []
+        if speed_factor != 1.0:
+            audio_filters.append(f"atempo={speed_factor}")
+        if volume_factor != 1.0:
+            audio_filters.append(f"volume={volume_factor}")
+        filter_complex.append(f"[0:a]{','.join(audio_filters)}[aout]")
+        audio_stream = "[aout]"
+        need_filter = True
+
+    # 封面处理
+    # if cover_image:
+    #     filter_complex.append(f"[1:v]copy[cover]")
+    #     need_filter = True
+
+    # 条件添加滤镜链
+    if need_filter:
+        cmd.extend(['-filter_complex', ';'.join(filter_complex)])
+
+    # 输出映射（动态调整）
+    cmd += ['-map', video_stream, '-map', audio_stream]
+    if cover_image:
+        cmd += ['-map', '[cover]']
+
+    # 编码参数
+    codec_config = {
+        'mp4': {'vcodec': 'libx264', 'acodec': 'aac'},
+        'webm': {'vcodec': 'libvpx-vp9', 'acodec': 'libopus'},
+        'mkv': {'vcodec': 'copy', 'acodec': 'copy'},
+        'avi': {'vcodec': 'libxvid', 'acodec': 'mp3'}
+    }
+    config = codec_config.get(output_format, codec_config['mp4'])
+
+    cmd.extend([
+        '-c:v', config['vcodec'],
+        '-c:a', config['acodec'],
+        '-movflags', '+faststart',
+        '-crf', '23',
+        '-preset', 'fast'
+    ])
+
+    # 设置封面属性
+    if cover_image:
+        cmd.extend([
+            '-disposition:v:0', 'default',
+            '-disposition:v:1', 'attached_pic'
+        ])
+
+    # 时间参数（结束时间或持续时间）
+    if duration:
+        cmd.extend(['-t', duration])
+    elif end_time:
+        cmd.extend(['-to', end_time])
+
+    # 输出文件
+    cmd.append(output_path)
+
+    try:
+        subprocess.run(cmd, check=True)
+        return output_path
+    except subprocess.CalledProcessError as e:
+        return f"处理失败：{e.stderr}"
 
 
 # 设置封面
@@ -136,7 +279,6 @@ def extract_video_clips(input_video_path, output_dir, interval=5):
 
 # 获取视频信息
 def get_info(video_path):
-    video_info = ""
     command = [
         '-v', 'quiet',  # 设置为安静模式，不打印任何信息到控制台
         '-print_format', 'json',  # 输出格式设置为JSON
@@ -147,69 +289,31 @@ def get_info(video_path):
     # 将结果从字符串转换成JSON对象
     info = json.loads(run_ffprobe_cmd(command).stdout)
     # 获取格式信息
-    format_info = info.get('format', {})
-    filename = format_info.get('filename')
-    duration = float(format_info.get('duration', 0))
-    overall_bitrate = format_info.get('bit_rate')
-
-    video_info += f"文件名: {get_file_name(filename)}\n"
-    video_info += f"时长: {duration:.2f}秒\n"
-    if overall_bitrate:
-        video_info += f"总比特率: {int(overall_bitrate) / 1000:.2f} kbps\n"
-    # 遍历流信息，找到视频流
-    for stream in info.get('streams', []):
-        if stream['codec_type'] == 'video':
-            codec_name = stream.get('codec_name')
-            width = stream.get('width')
-            height = stream.get('height')
-            avg_frame_rate = stream.get('avg_frame_rate')
-            bit_rate = stream.get('bit_rate')
-
-            # 计算帧率
-            if avg_frame_rate:
-                frame_rate = eval(avg_frame_rate)  # 将分数形式的字符串转换为浮点数
-            else:
-                frame_rate = None
-            # 打印视频相关信息
-            video_info += f"视频编解码器: {codec_name}\n"
-            video_info += f"分辨率: {width}x{height}\n"
-            if frame_rate is not None:
-                video_info += f"帧率: {frame_rate:.2f} fps\n"
-            if bit_rate:
-                video_info += f"比特率: {int(bit_rate) / 1000:.2f} kbps\n"
-            break  # 只处理第一个视频流
-    return video_info
+    format = info.get('format', {})
+    filename = format.get('filename')
+    raw_duration = float(format.get('duration', 0))
+    # overall_bitrate = format_info.get('bit_rate')
+    # 转换时长格式
+    try:
+        duration = file_util.seconds_to_hms(raw_duration)
+    except (ValueError, TypeError):
+        duration = "00:00:00"  # 异常时返回默认值
+    return {"filename": get_file_name(filename), "duration": f"{duration}", "format": format}
 
 
 # 提取音频
-def get_audio(video_path, audio_type=".mp3"):
-    audio_output_path = get_file_name_no_suffix(video_path) + "." + audio_type
+def get_audio(video_path, output_path):
     command = [
         '-i', video_path,  # 输入文件
         '-q:a', '0',  # 音频质量（0是最好的）
         '-map', 'a',  # 只选择音频流
-        audio_output_path  # 输出文件
-    ]
-    run_ffmpeg_cmd(command)
-    return "音频提取成功，文件地址为：" + audio_output_path
-
-
-# 提取视频
-def get_video(video_path, video_type="mp4"):
-    output_path = get_file_name_no_suffix(video_path) + "(无音频)." + video_type
-    command = [
-        '-i', video_path,  # 输入文件
-        '-c:v', 'copy',  # 复制视频编码，不进行重新编码
-        '-an',  # 不包含音频
         output_path  # 输出文件
     ]
     run_ffmpeg_cmd(command)
-    return "视频提取成功，文件地址为：" + output_path
 
 
 # # 添加音频
-def add_audio_to_video(video_path, audio_path):
-    output_path = get_file_name_no_suffix(video_path) + "（合并音频）" + get_file_suffix(video_path)
+def add_audio_to_video(video_path, audio_path, output_path):
     command = [
         '-i', video_path,  # 输入视频文件
         '-i', audio_path,  # 输入音频文件
@@ -222,124 +326,6 @@ def add_audio_to_video(video_path, audio_path):
     ]
     run_ffmpeg_cmd(command)
     return "音频添加成功，文件地址为：" + output_path
-
-
-# 音量调整
-def adjust_audio_volume(input_video, volume_factor):
-    output_path = get_download_folder() + get_file_name_no_suffix(input_video) + "(音量)" + get_file_suffix(input_video)
-
-    # volume_factor：1.5表示将音量提高50%，0.5表示将音量降低50%
-    command = [
-        '-i', input_video,  # 输入视频文件
-        '-filter_complex', f'[0:a]volume={volume_factor}[a]',  # 应用音量调整滤镜
-        '-map', '0:v:0',  # 映射第一个输入的第一个视频流
-        '-map', '[a]',  # 映射经过处理后的音频流
-        '-c:v', 'copy',  # 复制视频流，不重新编码
-        '-c:a', 'aac',  # 使用AAC编码器编码音频
-        output_path  # 输出文件
-    ]
-    run_ffmpeg_cmd(command)
-    return "操作成功，文件地址为：" + output_path
-
-# 调整视频分辨率
-def change_resolution(input_video, width, height):
-    # 480p (标清, SD)
-    # 分辨率: 640x480
-    # 宽高比: 4:3 或 16:9（取决于内容）
-    # 576p (PAL 标清, SD)
-    # 分辨率: 720x576
-    # 宽高比: 4:3 或 16:9
-    # 720p (高清, HD)
-    # 分辨率: 1280x720
-    # 宽高比: 16:9
-    # 1080p (全高清, Full HD)
-    # 分辨率: 1920x1080
-    # 宽高比: 16:9
-    # 1440p (2K, QHD)
-    # 分辨率: 2560x1440
-    # 宽高比: 16:9
-    # 2160p (4K UHD)
-    # 分辨率: 3840x2160
-    # 宽高比: 16:9
-    # 4320p (8K UHD)
-    # 分辨率: 7680x4320
-    # 宽高比: 16:9
-    output_path = get_download_folder() + get_file_name_no_suffix(input_video) + "(分辨率)" + get_file_suffix(
-        input_video)
-
-    command = [
-        '-i', input_video,  # 输入文件
-        '-vf', f'scale={width}:{height}',  # 视频过滤器：调整分辨率
-        '-c:a', 'copy',  # 复制音频流，不重新编码
-        output_path  # 输出文件
-    ]
-    run_ffmpeg_cmd(command)
-    return "分辨率调整成功，文件地址为：" + output_path
-
-
-# 控制速度
-def speed_video(input_video, speed_factor):
-    output_path = get_download_folder() + get_file_name_no_suffix(input_video) + "(速度)" + get_file_suffix(input_video)
-
-    # atempo滤镜支持的最大范围是0.5到2.0
-    # speed_factor 减慢0.5倍或加快2倍
-    command = [
-        '-i', input_video,  # 输入文件
-        '-filter_complex', f'[0:v]setpts={1 / speed_factor}*PTS[v];[0:a]atempo={speed_factor}[a]',  # 设置视频和音频的速度
-        '-map', '[v]',  # 映射视频流
-        '-map', '[a]',  # 映射音频流
-        '-c:v', 'libx264',  # 使用H.264编码器重新编码视频
-        '-c:a', 'aac',  # 使用AAC编码器重新编码音频
-        output_path  # 输出文件
-    ]
-    run_ffmpeg_cmd(command)
-
-
-# 视频格式转化
-def convert_video_format(input_path, video_type):
-    # 获取原始视频的信息
-    command = [
-        '-v', 'quiet',  # 设置为安静模式，不打印任何信息到控制台
-        '-print_format', 'json',  # 输出格式设置为JSON
-        '-show_format',  # 显示容器格式信息
-        '-show_streams',  # 显示所有流的信息
-        input_path
-    ]
-    # 将结果从字符串转换成JSON对象
-    probe = json.loads(run_ffprobe_cmd(command).stdout)
-    video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
-
-    avg_bitrate = int(float(video_stream.get('bit_rate', 0)) / 1000)  # 转换为Kbps
-
-    output_path = get_download_folder() + get_file_name_no_suffix(
-        input_path) + "." + video_type
-
-    command = [
-        '-i', input_path,
-        '-c:v', 'libx264',
-        '-b:v', f'{avg_bitrate}k',  # 使用原视频的平均比特率
-        # 使用CRF（恒定质量因子）：对于H.264编码器，CRF值是一个非常重要的参数，它可以在文件大小和视频质量之间提供一个很好的平衡。
-        # 通常情况下，CRF的范围是0-51，其中0表示无损，23是默认值，51是最差的质量。一般建议使用18-23之间的值
-        '-crf', '23',
-        '-c:a', 'aac',
-        output_path
-    ]
-
-    # 根据输出格式调整编解码器
-    if video_type == 'webm':
-        command[command.index('-c:v') + 1] = 'libvpx-vp9'
-        command[command.index('-c:a') + 1] = 'libopus'
-    elif video_type == 'avi':
-        command[command.index('-c:v') + 1] = 'libxvid'
-        command[command.index('-c:a') + 1] = 'mp3'
-    elif video_type == 'mkv':
-        command[command.index('-c:v') + 1] = 'copy'
-        command[command.index('-c:a') + 1] = 'copy'
-    elif video_type == 'flv':
-        command[command.index('-c:v') + 1] = 'libx264'
-        command[command.index('-c:a') + 1] = 'aac'
-    run_ffmpeg_cmd(command)
-    return "视频格式转化成功，文件地址为：" + output_path
 
 
 # 合并视频
@@ -392,50 +378,46 @@ def cut_video(input_path, start_time, end_time=None, duration=None):
 
 # 视频添加字幕
 def add_subtitle(video_path, subtitle_content, subtitle_type, fontsize=20):
-    try:
-        cmd = ["-hide_banner",
-               "-ignore_unknown",
-               '-y',
-               '-i',
-               os.path.normpath(video_path)
-               ]
-        output_video = get_download_folder()
-        # 获取文件名称
-        name = get_file_name_no_suffix(video_path)
-        srt_file = f'{name}.srt'
-        # 保存str文件
-        with open(srt_file, "w", encoding="utf-8") as file:
-            file.write(subtitle_content)
+    cmd = ["-hide_banner",
+           "-ignore_unknown",
+           '-y',
+           '-i',
+           os.path.normpath(video_path)
+           ]
+    # 获取文件名称
+    name = get_file_name_no_suffix(video_path)
+    srt_file = f'{name}.srt'
+    # 保存str文件
+    with open(srt_file, "w", encoding="utf-8") as file:
+        file.write(subtitle_content)
 
-        if subtitle_type:
-            # 软字幕
-            cmd += [
-                '-i', srt_file,
-                '-c:v', 'copy' if Path(video_path).suffix.lower() == '.mp4' else 'libx264',
-                '-c:s', 'mov_text',
-                '-metadata:s:s:0', 'language=chi'  # 设置字幕语言，例如中文
-            ]
-        else:
-            # 硬字幕
-            ass_file = f'{name}.ass'
-            # 字幕文件SRT转ASS
-            str_to_ass(srt_file, ass_file)
-            # 设置ass字体格式
-            set_ass_font(ass_file, fontsize)
-            cmd += [
-                '-c:v', 'libx264',
-                '-vf', f"subtitles={ass_file}",
-                '-crf', '13',
-                '-preset', "slow"
-            ]
-        output_video = output_video + f'{name}.mp4'
-        cmd.append(output_video)
-        run_ffmpeg_cmd(cmd)
-        del_file(srt_file)
-        del_file(ass_file)
-        return f"合成字幕成功,文件地址为：{output_video}"
-    except Exception as e:
-        print(e)
+    if subtitle_type:
+        # 软字幕
+        cmd += [
+            '-i', srt_file,
+            '-c:v', 'copy' if Path(video_path).suffix.lower() == '.mp4' else 'libx264',
+            '-c:s', 'mov_text',
+            '-metadata:s:s:0', 'language=chi'  # 设置字幕语言，例如中文
+        ]
+    else:
+        # 硬字幕
+        ass_file = f'{name}.ass'
+        # 字幕文件SRT转ASS
+        str_to_ass(srt_file, ass_file)
+        # 设置ass字体格式
+        set_ass_font(ass_file, fontsize)
+        cmd += [
+            '-c:v', 'libx264',
+            '-vf', f"subtitles={ass_file}",
+            '-crf', '13',
+            '-preset', "slow"
+        ]
+    output_video = config.ROOT_DIR_WIN / config.UPLOAD_DIR / f'video_add_subtitle.mp4'
+    cmd.append(output_video)
+    run_ffmpeg_cmd(cmd)
+    del_file(srt_file)
+    del_file(ass_file)
+    return f'video_add_subtitle.mp4'
 
 
 # 字幕文件SRT转ASS
@@ -525,7 +507,7 @@ if __name__ == '__main__':
     # speed_video(input_video_path, output_video, 1.5)
     # add_audio_to_video(input_video_path, audio_output, output_video)
     # adjust_audio_volume(input_video_path, output_video, 0.5)
-    convert_video_format(input_video_path, "D:/output111.avi")
+    # convert_video_format(input_video_path, "D:/output111.avi")
 
     # 调用函数拼接视频
     # video_paths = [
@@ -552,3 +534,28 @@ if __name__ == '__main__':
 
     # video_to_gif(input_video_path, "D:/output.gif", start_time=start_time, duration=duration)
     # extract_video_clips(input_video_path, "D:/333")
+
+    video_url = "D:\\video_sucai\\11.mp4"
+    jpg_url = "D:\\video_sucai\\p1.jpg"
+    # # 基本处理（只转格式）
+    # print(process_video(video_url, output_format='avi'))
+    #
+    # # 加速处理+调整分辨率
+    # print(process_video(video_url, speed_factor=1.5, width=1280, height=720))
+    #
+    # # 添加封面+剪切
+    # print(process_video(video_url,
+    #                     # cover_image=jpg_url,
+    #                     start_time="00:01:00",
+    #                     end_time="00:02:00"))
+
+    # 完整参数示例
+    print(process_video(video_url, output_format="mp4",
+                        speed_factor=0.8,
+                        volume_factor=2.0,
+                        width=640, height=480,
+                        start_time="00:00:30",
+                        duration="00:01:30",
+                        # cover_image="cover.png"
+                        )
+          )

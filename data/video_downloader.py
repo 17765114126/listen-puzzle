@@ -1,6 +1,6 @@
 import os
 import yt_dlp
-from util.file_util import sanitize_title, get_download_folder
+from data.util.file_util import sanitize_title
 
 
 def download_video(info, output_dir, resolution='1080p'):
@@ -25,6 +25,7 @@ def download_video(info, output_dir, resolution='1080p'):
         'outtmpl': os.path.join(output_dir, f"{series}{season}{title}.%(ext)s"),
         'ignoreerrors': True,
         'cookiefile': 'cookies.txt' if os.path.exists("cookies.txt") else None,
+        'noplaylist': True,  # 不下载播放列表（仅当前视频）,
     }
 
     # 执行下载
@@ -33,7 +34,7 @@ def download_video(info, output_dir, resolution='1080p'):
     return output_dir
 
 
-def download_videos_from_urls(urls, resolution='1080p', limit=5):
+def download_videos_from_urls(urls, output_dir, resolution='1080p', limit=5):
     """
     从给定的URL列表中下载视频。
 
@@ -44,8 +45,6 @@ def download_videos_from_urls(urls, resolution='1080p', limit=5):
     """
     # 将通过竖线分隔的字符串转换为列表
     url_list = [url.strip() for url in urls.split('|') if url.strip()]
-    # 获取默认下载目录
-    download_directory = get_download_folder()
 
     # 设置用于提取视频信息的选项
     extraction_options = {
@@ -69,11 +68,10 @@ def download_videos_from_urls(urls, resolution='1080p', limit=5):
 
     # 对于每个视频信息，调用download_video进行下载
     for video_info in video_info_list:
-        download_video(video_info, download_directory, resolution)
+        download_video(video_info, output_dir, resolution)
     title = sanitize_title(video_info_list[0]['title'])
-    video_url = download_directory + title + ".mp4"
-    print(video_url)
-    return f"视频下载成功，下载地址为：{download_directory}", video_url
+    title += ".mp4"
+    return title
 
 
 if __name__ == '__main__':

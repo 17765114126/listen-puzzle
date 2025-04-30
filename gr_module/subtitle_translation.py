@@ -1,6 +1,6 @@
 import gradio as gr
 from data import use_fast_whisper, use_ffmpeg
-from util import file_util
+from data.util import file_util
 import config
 
 # def set_function(selected_type,file_input, device, model, task, language, output_format):

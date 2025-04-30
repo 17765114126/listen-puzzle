@@ -1,4 +1,4 @@
-from util.requests_util import get, post
+from data.util.requests_util import get, post
 
 host = "http://localhost:11434"
 

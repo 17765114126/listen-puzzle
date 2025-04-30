@@ -1,5 +1,5 @@
 import gradio as gr
-from util import file_util
+from data.util import file_util
 from gr_module.subtitle_translation import subtitle_translation
 from gr_module.video_processing import video_processing
 from gr_module.setting import setting
@@ -24,5 +24,5 @@ def run():
     open_webui.launch(share=False,
                       server_port=9528,
                       inbrowser=True,
-                      favicon_path="../static/icon.ico",
+                      favicon_path="static/icon.ico",
                       allowed_paths=[file_util.get_download_folder()])

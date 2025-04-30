@@ -1,7 +1,7 @@
 import translators as ts
 
 import config
-from data import ollama_api
+from api import ollama_api
 
 
 # 搜索引擎

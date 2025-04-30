@@ -136,3 +136,13 @@ def set_ass_font(ass_file, fontsize=20):
     with open(ass_file, 'w', encoding='utf-8') as f:
         f.write("".join(ass_str))
     return ass_file
+
+
+def seconds_to_hms(seconds):
+    """将秒数转换为 HH:MM:SS 格式"""
+    seconds = int(round(float(seconds)))  # 处理浮点数和四舍五入
+    hours = seconds // 3600
+    remainder = seconds % 3600
+    minutes = remainder // 60
+    seconds = remainder % 60
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"

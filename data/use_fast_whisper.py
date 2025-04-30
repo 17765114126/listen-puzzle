@@ -3,14 +3,12 @@ import os
 from data import use_translation
 
 
-def transcribe(audio_path, device_type, model_type, language_type, output_format_type, is_translate, subtitle_double,
+def transcribe(audio_path, device_type, model_type, output_format_type, is_translate, subtitle_double,
                translator_engine, subtitle_language):
     os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
-    if language_type == "auto":
-        language_type = None
     # 加载模型
     model = WhisperModel(model_type, device=device_type, compute_type="int8")
-    segments, info = model.transcribe(audio_path, beam_size=5, task="transcribe", language=language_type)
+    segments, info = model.transcribe(audio_path, beam_size=5, task="transcribe", language='zh')
 
     # txt文件
     segments_txt = ""
@@ -46,4 +44,4 @@ def transcribe(audio_path, device_type, model_type, language_type, output_format
             else:
                 # 原文
                 segments_txt += f"{subtitle_text}\n\n"
-    return f"执行成功\n", segments_txt
+    return segments_txt
