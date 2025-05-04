@@ -117,27 +117,6 @@ def check_folder(target_file):
     return True
 
 
-# 设置ass字体格式
-def set_ass_font(ass_file, fontsize=20):
-    # 打开ass文件
-    with open(ass_file, 'r', encoding='utf-8') as f:
-        ass_str = f.readlines()
-    # 修改字幕样式
-    for i, it in enumerate(ass_str):
-        if it.find('Style: ') == 0:
-            ass_str[
-                i] = 'Style: Default,{fontname},{fontsize},{fontcolor},&HFFFFFF,{fontbordercolor},&H0,0,0,0,0,100,100,0,0,1,1,0,2,10,10,{subtitle_bottom},1'.format(
-                fontname="Arial", fontsize=fontsize,
-                fontcolor="&hffffff", fontbordercolor="&h000000",
-                subtitle_bottom=10, )
-            break
-
-    # 写入ass文件
-    with open(ass_file, 'w', encoding='utf-8') as f:
-        f.write("".join(ass_str))
-    return ass_file
-
-
 def seconds_to_hms(seconds):
     """将秒数转换为 HH:MM:SS 格式"""
     seconds = int(round(float(seconds)))  # 处理浮点数和四舍五入

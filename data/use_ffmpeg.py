@@ -1,11 +1,8 @@
-import os
-import subprocess
+import os, re, sys, json, subprocess
 from data.util.file_util import get_download_folder, get_file_name, get_file_suffix, get_file_name_no_suffix, \
-    set_ass_font, del_file
+    del_file
 import config
 from pathlib import Path
-import sys
-import json
 from data.util import file_util
 
 
@@ -376,8 +373,20 @@ def cut_video(input_path, start_time, end_time=None, duration=None):
     return "视频剪切完成，文件地址为：" + output_path
 
 
-# 视频添加字幕
-def add_subtitle(video_path, subtitle_content, subtitle_type, fontsize=20):
+def add_subtitle(video_path, subtitle_content, subtitle_type,
+                 fontname="楷体", fontsize=16, fontcolor="&Hffffff",
+                 fontbordercolor="&H000000", subtitle_bottom=20
+                 ):
+    """添加字幕到视频文件
+    Args:
+        video_path:  视频url
+        subtitle_content: 字幕内容
+        subtitle_type: 字幕类型：硬字幕 如按字母
+        font_name: 支持系统已安装的任何字体
+        fontsize: 字体大小
+        font_color: ASS格式颜色代码，默认白色，黑色
+        subtitle_bottom: 底部边距像素值
+    """
     cmd = ["-hide_banner",
            "-ignore_unknown",
            '-y',
@@ -405,7 +414,7 @@ def add_subtitle(video_path, subtitle_content, subtitle_type, fontsize=20):
         # 字幕文件SRT转ASS
         str_to_ass(srt_file, ass_file)
         # 设置ass字体格式
-        set_ass_font(ass_file, fontsize)
+        set_ass_font(ass_file, fontname, fontsize, fontcolor, fontbordercolor, subtitle_bottom)
         cmd += [
             '-c:v', 'libx264',
             '-vf', f"subtitles={ass_file}",
@@ -427,6 +436,26 @@ def str_to_ass(srt_file, ass_file):
                     '-i',
                     f'{srt_file}',
                     f'{ass_file}'])
+
+
+# 设置ass字体格式
+def set_ass_font(ass_file, fontname, fontsize, fontcolor, fontbordercolor, subtitle_bottom):
+    with open(ass_file, 'r+', encoding='utf-8') as f:
+        content = f.read()
+
+        # 使用正则表达式精准匹配样式行（包含Windows字体名空格）
+        style_pattern = re.compile(r'^Style:\s*.*', flags=re.MULTILINE)
+        new_style = (
+            f"Style: Default,{fontname},{fontsize},"
+            f"{fontcolor},&HFFFFFF,{fontbordercolor},&H0,0,0,0,0,"
+            f"100,100,0,0,1,1,0,2,10,10,{subtitle_bottom},1"
+        )
+        updated_content = re.sub(style_pattern, new_style, content, count=1)
+
+        f.seek(0)
+        f.write(updated_content)
+        f.truncate()
+    return ass_file
 
 
 # cmd执行ffmpeg命令
@@ -535,7 +564,7 @@ if __name__ == '__main__':
     # video_to_gif(input_video_path, "D:/output.gif", start_time=start_time, duration=duration)
     # extract_video_clips(input_video_path, "D:/333")
 
-    video_url = "D:\\video_sucai\\11.mp4"
+    video_url = "D:\\sucai\\22.mp4"
     jpg_url = "D:\\video_sucai\\p1.jpg"
     # # 基本处理（只转格式）
     # print(process_video(video_url, output_format='avi'))
@@ -549,13 +578,171 @@ if __name__ == '__main__':
     #                     start_time="00:01:00",
     #                     end_time="00:02:00"))
 
-    # 完整参数示例
-    print(process_video(video_url, output_format="mp4",
-                        speed_factor=0.8,
-                        volume_factor=2.0,
-                        width=640, height=480,
-                        start_time="00:00:30",
-                        duration="00:01:30",
-                        # cover_image="cover.png"
-                        )
-          )
+    # # 完整参数示例
+    # print(process_video(video_url, output_format="mp4",
+    #                     speed_factor=0.8,
+    #                     volume_factor=2.0,
+    #                     width=640, height=480,
+    #                     start_time="00:00:30",
+    #                     duration="00:01:30",
+    #                     # cover_image="cover.png"
+    #                     )
+    #       )
+    subtitle_content = """
+1
+00:00:00,000 --> 00:00:03,240
+99推出LiveCC视频解说模型
+
+2
+00:00:03,240 --> 00:00:05,660
+CC for Closed Caption
+
+3
+00:00:05,660 --> 00:00:09,279
+能够模仿人类解说员对体育比赛
+
+4
+00:00:09,279 --> 00:00:12,599
+The NBA playoffs are underway
+
+5
+00:00:12,599 --> 00:00:15,339
+Game 1 of the Western Conference
+
+6
+00:00:15,339 --> 00:00:17,760
+First round between the No. 2
+
+7
+00:00:17,760 --> 00:00:19,839
+seated Houston Rockets
+
+8
+00:00:19,839 --> 00:00:21,039
+小学视频
+
+9
+00:00:21,039 --> 00:00:24,859
+Hey guys, today I will show you
+
+10
+00:00:24,859 --> 00:00:27,120
+how to fix a water-damaged laptop
+
+11
+00:00:27,120 --> 00:00:28,679
+So if you've got a laptop
+
+12
+00:00:28,679 --> 00:00:31,079
+that's been accidentally spilled on
+
+13
+00:00:31,079 --> 00:00:33,560
+or you've dropped it in a puddle of water
+
+14
+00:00:33,560 --> 00:00:34,920
+this is what you need to do
+
+15
+00:00:34,920 --> 00:00:36,380
+先上游戏的
+
+16
+00:00:36,380 --> 00:00:38,939
+Hey guys, I'm going to be showing you
+
+17
+00:00:38,939 --> 00:00:41,420
+what happened in 7.38c
+
+18
+00:00:41,420 --> 00:00:42,859
+So the first thing that happened
+
+19
+00:00:42,859 --> 00:00:46,200
+was time zone no longer manipulates
+
+20
+00:00:46,200 --> 00:00:47,719
+实时解说
+
+21
+00:00:47,719 --> 00:00:51,920
+实验显示LiveCC 7B Instruct模型
+
+22
+00:00:51,920 --> 00:00:54,019
+在实时模式下的解说质量
+
+23
+00:00:54,019 --> 00:00:57,240
+超过参数721的领先模型
+
+24
+00:00:57,240 --> 00:00:58,659
+比如Lava VDA
+
+25
+00:00:58,660 --> 00:00:59,500
+还有
+
+26
+00:00:59,500 --> 00:01:02,700
+中国团队推出Failu行动型浏览器
+
+27
+00:01:02,700 --> 00:01:04,620
+或者智能体浏览器
+
+28
+00:01:04,620 --> 00:01:06,260
+Agentech Browser
+
+29
+00:01:06,260 --> 00:01:07,820
+能够根据用户的目标
+
+30
+00:01:07,820 --> 00:01:09,460
+自主拆解任务
+
+31
+00:01:09,460 --> 00:01:12,340
+支持跨网页的深度搜索和操作
+
+32
+00:01:12,340 --> 00:01:15,580
+包括安全的访问需要登录的平台
+
+33
+00:01:15,580 --> 00:01:17,100
+也就是说它可以在登录后
+
+34
+00:01:17,100 --> 00:01:18,379
+访问私有数据
+
+35
+00:01:18,379 --> 00:01:22,300
+比如像登录微博这种登录你的账号
+
+36
+00:01:22,300 --> 00:01:25,500
+来更好完成端到端任务交付
+
+37
+00:01:25,500 --> 00:01:28,500
+此外Failu支持影子空间
+
+38
+00:01:28,500 --> 00:01:29,939
+Shadow Workspace
+"""
+    # Courier New
+    # Impact
+    add_subtitle(video_url, subtitle_content, False,
+                 fontname="楷体", fontsize=16, fontcolor="&Hffffff",
+                 fontbordercolor="&H000000", subtitle_bottom=16)

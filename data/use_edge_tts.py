@@ -1,10 +1,32 @@
 import asyncio
 import edge_tts
+import requests
+
+
+# 微软近期对中国区增加了 Sec-MS-GEC 和 Sec-MS-GEC-Version 参数校验，缺失或过期会导致 WSServerHandshakeError: 403 错误。
+# 该限制仅针对中国 IP，国外用户不受影响。
 
 
 async def text_to_speech(text, voice, output_file):
-    communicate = edge_tts.Communicate(text, voice)
+    # 动态获取 Sec 参数
+    try:
+        sec_data = requests.get("https://edgeapi.pyvideotrans.com/token.json").json()
+    except:
+        sec_data = {"Sec-MS-GEC": "", "Sec-MS-GEC-Version": ""}
+
+    # 创建带参数的通信对象
+    communicate = edge_tts.Communicate(
+        text,
+        voice,
+        # proxy="http://127.0.0.1:7890",  # 若需代理
+        custom_headers={
+            "Sec-MS-GEC": sec_data.get("Sec-MS-GEC", ""),
+            "Sec-MS-GEC-Version": sec_data.get("Sec-MS-GEC-Version", "")
+        }
+    )
     await communicate.save(output_file)
+    # communicate = edge_tts.Communicate(text, voice)
+    # await communicate.save(output_file)
 
 
 # 获取所有可用的声音
@@ -29,8 +51,8 @@ if __name__ == '__main__':
     # 示例：将文本 "Hello, world!" 转换成英语女声，并保存为 hello_world.mp3
     text = "Hello, world!"
     voice = "en-GB-SoniaNeural"  # 使用英国英语的 Sonia 声音
-    output_file = "hello_world.mp3"
+    output_file = "D:\\sucai\\hello_world.mp3"
 
     # 运行异步函数
-    # asyncio.run(text_to_speech(text, voice, output_file))
-    print_voice_list()
+    asyncio.run(text_to_speech(text, voice, output_file))
+    # print_voice_list()

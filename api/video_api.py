@@ -110,7 +110,8 @@ async def transcribe(req: BaseReq):
 # 视频添加字幕
 @router.post("/video_add_subtitle")
 async def video_add_subtitle(req: BaseReq):
-    title = use_ffmpeg.add_subtitle(req.video_input, req.subtitle_content, req.is_soft, req.font_size)
+    title = use_ffmpeg.add_subtitle(req.video_input, req.subtitle_content, req.is_soft, req.fontname, req.fontsize,
+                                    req.fontcolor, req.subtitle_bottom)
     access_url_path = config.ROOT_DIR_WIN / config.UPLOAD_DIR / title
     video_info = use_ffmpeg.get_info(access_url_path)
     return {

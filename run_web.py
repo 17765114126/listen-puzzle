@@ -53,6 +53,9 @@ def is_port_ready(port: int, timeout=30) -> bool:
 # pyinstaller -F -i icon.ico run.py
 # pyinstaller -F -i icon.ico --paths "D:\develop\project\reptile_project\excel_tool" run.py
 
+# if __name__ == "__main__":
+#     run()
+
 if __name__ == "__main__":
     freeze_support()
     # 创建两个进程
@@ -63,7 +66,7 @@ if __name__ == "__main__":
     api_process.start()
     web_process.start()
     # 等待端口就绪
-    if is_port_ready(8688):
+    if is_port_ready(config.web_host):
         # 打开默认浏览器
         webbrowser.open(f"http://localhost:{config.web_host}")
     else:

@@ -1,4 +1,5 @@
 from data.util.requests_util import get, post
+import json
 
 host = "http://localhost:11434"
 
@@ -9,7 +10,8 @@ def ollama_list():
     """
     # return ["Llama 3.1", "gemma2", "Qwen2.5"]
     models_data = get(host + "/api/tags")
-    return [model['name'] for model in models_data['models']]
+    models_dict = json.loads(models_data.text)
+    return [model['name'] for model in models_dict['models']]
 
 
 def ollama_show(ollama_model):
@@ -162,8 +164,8 @@ def ollama_chat(ollama_model, messages, stream=False, tools=None, keep_alive=5):
     #         yield data['message']['content']
     # else:
     # 如果不是流式模式，直接返回整个响应
-    # data = json_read.json_format(response)
-    return response['message']['content']
+    models_dict = json.loads(response.text)
+    return models_dict['message']['content']
     # return "**今天天气真好!**"
 
 
