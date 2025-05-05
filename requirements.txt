@@ -12,3 +12,16 @@ pysrt
 edge_tts==6.1.13
 audio_separator
 xxhash
+
+
+peft
+transformers>=4.43
+fast_langdetect>=0.3.1
+jieba
+split_lang
+x_transformers
+pytorch_lightning
+jieba_fast
+pypinyin
+cn2an
+opencc
