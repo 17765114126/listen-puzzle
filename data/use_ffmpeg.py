@@ -347,30 +347,30 @@ def concatenate_videos_with_filter(video_paths, output_path):
     return "视频合并成功，文件地址为：" + output_path
 
 
-# 分割视频
-def cut_video(input_path, start_time, end_time=None, duration=None):
-    # start_time = '00:00:10'
-    # 从第10秒开始，持续20秒
-    # duration = '00:00:20'
-    # 或者从第10秒开始，到第30秒结束
-    # end_time = '00:00:30'
-    output_path = get_download_folder() + get_file_name_no_suffix(
-        input_path) + "(剪切)" + get_file_suffix(input_path)
-    command = [
-        '-i', input_path,  # 输入视频文件
-        '-ss', start_time,  # 开始时间
-        '-c', 'copy',  # 复制流，不重新编码
-        output_path  # 输出文件
-    ]
-
-    if duration:
-        command.insert(4, '-t')
-        command.insert(5, duration)
-    elif end_time:
-        command.insert(4, '-to')
-        command.insert(5, end_time)
-    run_ffmpeg_cmd(command)
-    return "视频剪切完成，文件地址为：" + output_path
+# # 分割视频
+# def cut_video(input_path, start_time, end_time=None, duration=None):
+#     # start_time = '00:00:10'
+#     # 从第10秒开始，持续20秒
+#     # duration = '00:00:20'
+#     # 或者从第10秒开始，到第30秒结束
+#     # end_time = '00:00:30'
+#     output_path = get_download_folder() + get_file_name_no_suffix(
+#         input_path) + "(剪切)" + get_file_suffix(input_path)
+#     command = [
+#         '-i', input_path,  # 输入视频文件
+#         '-ss', start_time,  # 开始时间
+#         '-c', 'copy',  # 复制流，不重新编码
+#         output_path  # 输出文件
+#     ]
+#
+#     if duration:
+#         command.insert(4, '-t')
+#         command.insert(5, duration)
+#     elif end_time:
+#         command.insert(4, '-to')
+#         command.insert(5, end_time)
+#     run_ffmpeg_cmd(command)
+#     return "视频剪切完成，文件地址为：" + output_path
 
 
 def add_subtitle(video_path, subtitle_content, subtitle_type,
@@ -458,6 +458,188 @@ def set_ass_font(ass_file, fontname, fontsize, fontcolor, fontbordercolor, subti
     return ass_file
 
 
+def parse_time(time_str):
+    h, m, s_ms = time_str.split(':')
+    s, ms = s_ms.split('.') if '.' in s_ms else (s_ms, '000')
+    total_seconds = int(h) * 3600 + int(m) * 60 + int(s) + int(ms) / 1000
+    return total_seconds
+
+
+def format_time(seconds):
+    hours = int(seconds // 3600)
+    mins = int((seconds % 3600) // 60)
+    secs = seconds % 60
+    return f"{hours:02d}:{mins:02d}:{secs:06.3f}"
+
+
+def adjust_time(time_str, delta_seconds):
+    total_seconds = parse_time(time_str)
+    total_seconds += delta_seconds
+    if total_seconds < 0:
+        total_seconds = 0  # 防止时间变为负数
+    return format_time(total_seconds)
+
+
+# 分割视频
+def cut_video(input_path, start_time, end_time=None, duration=None, output_suffix="(剪切)"):
+    output_path = config.ROOT_DIR_WIN / "static/uploads" / f"{get_file_name_no_suffix(input_path)}{output_suffix}{get_file_suffix(input_path)}"
+    # command = ['-y',
+    #            '-i', input_path,
+    #            '-ss', start_time,
+    #            '-c',
+    #            'copy']
+    command = [
+        '-y',
+        '-ss', start_time,
+        '-i', str(input_path),
+        '-an',  # 禁用音频
+        '-c:v', 'libx264',
+        '-vsync', 'cfr',  # 保证恒定帧率
+        '-video_track_timescale', '1000',  # 关键：统一时间基为1/1000
+        '-g', '60',  # 关键：设置GOP长度避免丢帧
+        '-preset', 'fast',
+        '-r', '30',  # 强制输出帧率为30
+    ]
+    if end_time:
+        command.extend(['-to', end_time])
+    elif duration:
+        command.extend(['-t', duration])
+    command.append(str(output_path))
+    run_ffmpeg_cmd(command)
+    return output_path
+
+
+def cut_video_silence(input_path, start_time, end_time, output_suffix):
+    """剪切视频并强制静音"""
+    output_path = config.ROOT_DIR_WIN / "static/uploads" / f"{get_file_name_no_suffix(input_path)}{output_suffix}{get_file_suffix(input_path)}"
+    command = [
+        '-y',
+        '-i', str(input_path),
+        '-ss', start_time,
+        '-an',  # 禁用音频
+        '-c:v', 'libx264',
+        '-vf', 'scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setpts=PTS-STARTPTS',  # 关键修改：统一分辨率
+        '-vsync', 'cfr',
+        '-video_track_timescale', '1000',
+        '-r', '30',
+        '-preset', 'fast'
+    ]
+    if end_time:
+        command.extend(['-to', end_time])
+    elif duration:
+        command.extend(['-t', duration])
+    command.append(str(output_path))
+    run_ffmpeg_cmd(command)
+    return output_path
+
+
+def concatenate_videos_with_transitions(clip_infos, output_path):
+    print("========================剪切生成中间文件=================================")
+    adjusted_clips = []
+    n = len(clip_infos)
+    for i in range(n):
+        clip = clip_infos[i]
+        start = clip['start_time']
+        end = clip['end_time']
+        if i > 0 and clip_infos[i - 1]['transition'] == 'dissolve':
+            start = adjust_time(start, -0.5)
+        if i < n - 1 and clip['transition'] == 'dissolve':
+            end = adjust_time(end, +0.5)
+        adjusted_clips.append({
+            'source_name': clip['source_name'],
+            'start_time': start,
+            'end_time': end,
+            'transition': clip['transition']
+        })
+
+    intermediate_files = []
+    for clip in adjusted_clips:
+        source_path = config.ROOT_DIR_WIN / "static/source_videos" / clip['source_name']
+        output_file = cut_video_silence(
+            source_path,
+            str(clip['start_time']),
+            end_time=str(clip['end_time']),
+            output_suffix=f"(剪切_{len(intermediate_files)})"
+        )
+        intermediate_files.append(output_file)
+    print("========================合成视频前处理=================================")
+    inputs = []
+    for file in intermediate_files:
+        inputs.extend(['-i', str(file)])
+    # 构建过滤器链（增强兼容性）
+    filter_script = []
+    # 步骤1：预处理（统一分辨率、时间基、帧率）
+    for i in range(len(intermediate_files)):
+        filter_script.append(
+            f"[{i}:v]scale=1280:720:force_original_aspect_ratio=decrease,"
+            f"pad=1280:720:(ow-iw)/2:(oh-ih)/2,"
+            f"settb=AVTB,"  # 强制时间基为1/1000000
+            f"fps=30,"  # 统一帧率为30
+            f"setpts=PTS-STARTPTS,"  # 重置时间戳
+            f"format=yuv420p[v{i}];"
+        )
+    # 步骤2：正确级联所有视频流
+    current_stream = "v0"
+    for i in range(len(intermediate_files) - 1):
+        next_stream = f"v{i + 1}"
+        filter_script.append(
+            f"[{current_stream}][{next_stream}]"
+            f"concat=n=2:v=1:a=0[out{i}];"
+        )
+        current_stream = f"out{i}"  # 更新当前流为输出
+    # 计算总时长
+    cut_total_duration = sum(
+        get_video_duration(file) for file in intermediate_files
+    )
+    # 步骤3：添加音频流和最终输出
+    filter_script.append(
+        f"aevalsrc=0:d={cut_total_duration}[aout];"
+        f"[{current_stream}]format=yuv420p[vout]"
+    )
+    print("========================合成视频=================================")
+    # 构建完整命令（增加硬件加速支持）
+    command = [
+        '-y',
+        '-hwaccel', 'auto',  # 启用硬件加速
+        *inputs,
+        '-filter_complex', ''.join(filter_script),
+        '-map', '[vout]',
+        '-map', '[aout]',
+        '-c:v', 'h264_nvenc' if check_nvidia() else 'libx264',  # 自动检测NVIDIA显卡
+        '-preset', 'fast',
+        '-profile:v', 'main',
+        '-movflags', '+faststart',
+        '-c:a', 'aac',
+        '-b:a', '192k',
+        '-shortest',
+        str(output_path)
+    ]
+
+    run_ffmpeg_cmd(command)
+    return "合并成功"
+
+
+def check_nvidia():
+    """检测NVIDIA显卡支持"""
+    try:
+        subprocess.run(['nvidia-smi'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return True
+    except FileNotFoundError:
+        return False
+
+
+def get_video_duration(input_path):
+    # 获取视频的总时长
+    duration_command = [
+        '-v', 'error',
+        '-show_entries', 'format=duration',
+        '-of', 'default=noprint_wrappers=1:nokey=1',
+        input_path
+    ]
+    result = run_ffprobe_cmd(duration_command)
+    return float(result.stdout.strip())
+
+
 # cmd执行ffmpeg命令
 def run_ffmpeg_cmd(cmd):
     try:
@@ -468,7 +650,7 @@ def run_ffmpeg_cmd(cmd):
         # if check_cuda_support():
         #     command.extend(['-hwaccel', 'cuda'])
         command.extend(cmd)
-        print(command)
+        print(f"ffmpeg运行命令：{command}")
         result = subprocess.run(command,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT,
@@ -477,7 +659,7 @@ def run_ffmpeg_cmd(cmd):
                                 check=True,
                                 creationflags=0 if sys.platform != 'win32' else subprocess.CREATE_NO_WINDOW
                                 )
-        print(result)
+        print(f"ffmpeg返回结果 ：{result}")
         return result
     except subprocess.CalledProcessError as e:
         print("An error occurred while running the command.")
@@ -596,150 +778,6 @@ if __name__ == '__main__':
 2
 00:00:03,240 --> 00:00:05,660
 CC for Closed Caption
-
-3
-00:00:05,660 --> 00:00:09,279
-能够模仿人类解说员对体育比赛
-
-4
-00:00:09,279 --> 00:00:12,599
-The NBA playoffs are underway
-
-5
-00:00:12,599 --> 00:00:15,339
-Game 1 of the Western Conference
-
-6
-00:00:15,339 --> 00:00:17,760
-First round between the No. 2
-
-7
-00:00:17,760 --> 00:00:19,839
-seated Houston Rockets
-
-8
-00:00:19,839 --> 00:00:21,039
-小学视频
-
-9
-00:00:21,039 --> 00:00:24,859
-Hey guys, today I will show you
-
-10
-00:00:24,859 --> 00:00:27,120
-how to fix a water-damaged laptop
-
-11
-00:00:27,120 --> 00:00:28,679
-So if you've got a laptop
-
-12
-00:00:28,679 --> 00:00:31,079
-that's been accidentally spilled on
-
-13
-00:00:31,079 --> 00:00:33,560
-or you've dropped it in a puddle of water
-
-14
-00:00:33,560 --> 00:00:34,920
-this is what you need to do
-
-15
-00:00:34,920 --> 00:00:36,380
-先上游戏的
-
-16
-00:00:36,380 --> 00:00:38,939
-Hey guys, I'm going to be showing you
-
-17
-00:00:38,939 --> 00:00:41,420
-what happened in 7.38c
-
-18
-00:00:41,420 --> 00:00:42,859
-So the first thing that happened
-
-19
-00:00:42,859 --> 00:00:46,200
-was time zone no longer manipulates
-
-20
-00:00:46,200 --> 00:00:47,719
-实时解说
-
-21
-00:00:47,719 --> 00:00:51,920
-实验显示LiveCC 7B Instruct模型
-
-22
-00:00:51,920 --> 00:00:54,019
-在实时模式下的解说质量
-
-23
-00:00:54,019 --> 00:00:57,240
-超过参数721的领先模型
-
-24
-00:00:57,240 --> 00:00:58,659
-比如Lava VDA
-
-25
-00:00:58,660 --> 00:00:59,500
-还有
-
-26
-00:00:59,500 --> 00:01:02,700
-中国团队推出Failu行动型浏览器
-
-27
-00:01:02,700 --> 00:01:04,620
-或者智能体浏览器
-
-28
-00:01:04,620 --> 00:01:06,260
-Agentech Browser
-
-29
-00:01:06,260 --> 00:01:07,820
-能够根据用户的目标
-
-30
-00:01:07,820 --> 00:01:09,460
-自主拆解任务
-
-31
-00:01:09,460 --> 00:01:12,340
-支持跨网页的深度搜索和操作
-
-32
-00:01:12,340 --> 00:01:15,580
-包括安全的访问需要登录的平台
-
-33
-00:01:15,580 --> 00:01:17,100
-也就是说它可以在登录后
-
-34
-00:01:17,100 --> 00:01:18,379
-访问私有数据
-
-35
-00:01:18,379 --> 00:01:22,300
-比如像登录微博这种登录你的账号
-
-36
-00:01:22,300 --> 00:01:25,500
-来更好完成端到端任务交付
-
-37
-00:01:25,500 --> 00:01:28,500
-此外Failu支持影子空间
-
-38
-00:01:28,500 --> 00:01:29,939
-Shadow Workspace
 """
     # Courier New
     # Impact

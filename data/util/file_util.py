@@ -63,25 +63,19 @@ def read_text_file(file):
 
 
 # 获取文件夹下所有文件名称
-def get_chats():
-    # 获取当前脚本所在目录，即项目根目录
-    project_root = Path(__file__).resolve().parent.parent
-    # 指定chats文件夹
-    chats_folder = project_root / 'chats'
-    # 确保 chats 文件夹存在
-    if not os.path.exists(chats_folder):
-        os.makedirs(chats_folder)
-    # 初始化一个空列表来保存文件名
+def get_folder_file_name(operate_folder):
+    # 确保文件夹存在
+    if not os.path.exists(operate_folder):
+        os.makedirs(operate_folder)
     filenames = []
     # 遍历文件夹中的每个文件
-    for file_path in chats_folder.iterdir():
+    for file_path in operate_folder.iterdir():
         # 只处理文件，跳过子目录
         if file_path.is_file():
             # 去除文件扩展名并将结果添加到列表
-            file_path_stem = []
-            file_path_stem.append(file_path.stem)
-            file_path_stem.append("x")
-            filenames.append(file_path_stem)
+            # filenames.append(file_path.stem)
+            # 保留文件扩展名并将结果添加到列表
+            filenames.append(file_path.name)
     return filenames
 
 

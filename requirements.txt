@@ -12,7 +12,7 @@ pysrt
 edge_tts==6.1.13
 audio_separator
 xxhash
-
+pip install opencv-python
 
 peft
 transformers>=4.43

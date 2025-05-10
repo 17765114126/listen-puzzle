@@ -41,6 +41,12 @@ api_host = 9527
 web_host = 9528
 
 UPLOAD_DIR = "static/uploads/"
+
+provider = "ollama"
+model_name = "gemma3:12b"
+api_key = 'sk-21ea07e9479d473698f7b010fd98ae70'
+pexels_api_keys = "AQanz5J1ptLpe8EzANVz4fFN9R0friFxQLnvzpTjTLFbwKjpR3eL6XLA"
+pixabay_api_keys = ""
 #####################################
 resolution = [
     "4320p",

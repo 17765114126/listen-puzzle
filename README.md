@@ -1,31 +1,54 @@
 # listen-puzzle
 
-#### 介绍
-音视频处理项目（持续更新中）
+### 介绍
 
-#### 软件架构
-python
-vue
+将有助于音视频创作的ai项目集成为一个工作流，并提供优雅的ui界面，方便创作
 
-#### 安装教程
 
-1.  下载源码
-2.  requirements.txt依赖安装
-3.  python run_webui.py
-4. windows上下载ffmpeg后，将bin目录下的 ffmpeg.exe和ffprobe.exe 文件复制到当前目录下的 ffmpeg 文件夹内
+### 已集成
+
+1. 视频一键下载（支持上千个平台）
+2. 音视频简单处理
+3. 字幕生成，翻译，合成
+4. 语音克隆
+5. 根据文案生成视频工作流（暂时只有api）
+
+### 未来
+
+1. 样式优化
+2. 生成视频工作流优化
+3. 歌声转换（已实现未集成）
+4. 支持多人声音字幕生成
+5. 人脸克隆（已实现未集成）
+6. 数字人生成（已实现未集成）
+7. 数字人实时对话（待施工）
+8. 大模型角色定义
+9. mcp集成
+### 引用下面项目部分代码
+
+### 安装教程
+
+1. 下载源码
+2. requirements.txt依赖安装
+3. windows上下载ffmpeg后，将bin目录下的 ffmpeg.exe和ffprobe.exe 文件复制到当前目录下的 ffmpeg 文件夹内
    下载地址：https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2023-11-30-12-55/ffmpeg-n6.0.1-win64-gpl-6.0.zip
 
-#### 使用说明
+#### 启动
 
-启动webui使用
-1. 视频一键下载（支持上千个平台）
-2. 音视频简单处理，字幕生成，翻译，合成
-3. 语音克隆
-4. 歌声转换
+api：
 
+```
+python run_api.py
+```
 
-#### 未来添加
-1. 样式优化
-2. 支持多人声音字幕生成
-3. 视频生成 短视频工作流
-4. 人脸克隆
+webui：
+
+```
+python run_web.py
+```
+### 界面展示
+![演示界面](static/interface.png)
+
+<p align="center">
+  <img src="static/interface.png" width="100%" alt="演示界面">
+</p>

@@ -1,17 +1,16 @@
 import logging
-import re
-from typing import List, Optional
-
+from typing import Optional
 import g4f
 import requests
 from openai import AzureOpenAI, OpenAI
+import config
 
 
 def _generate_response(
         prompt: str,
-        provider: str,
-        api_key: Optional[str] = None,
-        model_name: Optional[str] = None,
+        provider: str = config.provider,
+        api_key: Optional[str] = config.api_key,
+        model_name: Optional[str] = config.model_name,
         base_url: Optional[str] = None,
         api_version: Optional[str] = None,
         secret_key: Optional[str] = None,
@@ -193,76 +192,6 @@ def _handle_openai_compatible(
     return response.choices[0].message.content
 
 
-def generate_script(
-        video_subject: str,
-        language: str = "zh-CN",
-        provider: str = "g4f",
-        **model_kwargs
-) -> str:
-    prompt = f"""
-    # Role: Video Script Generator
-
-    ## Goals:
-    Generate a script for a video, depending on the subject of the video.
-    ## Constrains:
-    1. the script is to be returned as a string with the specified number of paragraphs.
-    2. do not under any circumstance reference this prompt in your response.
-    3. get straight to the point, don't start with unnecessary things like, "welcome to this video".
-    4. you must not include any type of markdown or formatting in the script, never use a title.
-    5. only return the raw content of the script.
-    6. do not include "voiceover", "narrator" or similar indicators of what should be spoken at the beginning of each paragraph or line.
-    7. you must not mention the prompt, or anything about the script itself. also, never talk about the amount of paragraphs or lines. just write the script.
-    8. respond in the same language as the video subject.
-
-    # Initialization:
-    - video subject: {video_subject}
-    - number of paragraphs: 1
-    """.strip()
-    response = _generate_response(prompt, provider, **model_kwargs)
-    final_script = _clean_script(response)
-    logging.info(f"最终脚本:\n{final_script}")
-    return final_script
-
-
-def _clean_script(raw_script: str) -> str:
-    """清洗并格式化生成的脚本"""
-    # 去除特殊符号
-    cleaned = re.sub(r"[*#【】]", "", raw_script)
-    # 分段处理
-    paragraphs = [p.strip() for p in cleaned.split("\n\n") if p.strip()]
-    return paragraphs
-
-
-def generate_terms(
-        video_subject: str,
-        video_script: str,
-        amount: int = 5,
-        provider: str = "g4f",
-        **model_kwargs
-) -> List[str]:
-    """生成视频搜索关键词"""
-    prompt = f"""
-    为关于{video_subject}的视频生成{amount}个搜索关键词。
-    上下文：{video_script[:500]}
-    要求：
-    1：搜索词以,分隔
-    2. 每个搜索词应由 1-3 个单词组成，始终添加视频的主要主题。
-    3. 搜索词只能返回关键词，不要标题和解释性说明
-    4. 搜索词必须与视频主题相关。
-    5. 仅使用英文搜索词进行回复。
-    返回示例:
-    search term 1, "search term 2,  search term 3, search term 4, search term 5
-    请注意，您必须使用英语生成视频搜索词;不接受中文。
-    """
-    response = _generate_response(prompt, provider, **model_kwargs)
-    try:
-        search_terms = response.strip(",")
-        logging.info(f"最终关键词: {search_terms}")
-        return search_terms
-    except Exception as e:
-        logging.warning(f"解析异常: {str(e)}")
-
-
 if __name__ == "__main__":
     """
     支持的供应商及参数要求：
@@ -278,27 +207,18 @@ if __name__ == "__main__":
     - 'deepseek'  : 需要api_key和model_name 模型名称：deepseek-chat  deepseek-reasoner
     - 'oneapi'    : 需要api_key, model_name和base_url
     """
-    provider = "ollama"
-    model_name = "gemma3:12b"
-    api_key = 'sk-21ea07e9479d473698f7b010fd98ae70'
-
-    # 示例用法
-    script = generate_script(
-        video_subject="生命的意义",
-        provider=provider,
-        model_name=model_name,
-        api_key=api_key
-    )
-
-    print("生成脚本:")
-    print(script)
-
-    terms = generate_terms(
-        video_subject="哲学思考",
-        video_script=script,
-        provider=provider,
-        model_name=model_name,
-        api_key=api_key
-    )
-    print("\n搜索关键词:")
-    print(terms)
+    keywords_prompt = f"""
+    扩写文案：
+    我当然知道那不是我的月亮
+    但有一刻
+    月亮的确照在了我身上
+    可生活不是电影
+    我也缺少点运气
+    我悄然触摸你
+    却未曾料想
+    你像蒲公英散开了
+    到处啊
+    都是你的模样
+    """
+    print("=========================================================")
+    print(_generate_response(keywords_prompt))

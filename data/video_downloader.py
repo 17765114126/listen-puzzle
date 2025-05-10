@@ -1,6 +1,12 @@
 import os
+import random
 import yt_dlp
 from data.util.file_util import sanitize_title
+import config
+import requests
+from urllib.parse import urlencode
+from data import use_video_analyse
+import re
 
 
 def download_video(info, output_dir, resolution='1080p'):
@@ -74,7 +80,153 @@ def download_videos_from_urls(urls, output_dir, resolution='1080p', limit=5):
     return title
 
 
+# pexels视频下载
+def search_videos_pexels(
+        search_term: str,
+        minimum_duration: int,
+):
+    """
+    minimum_duration：所需的视频方向。当前支持的方向为：
+    landscape = "16:9"  video_width, video_height = 1920, 1080
+    portrait = "9:16"   video_width, video_height = 1080, 1920
+    square = "1:1"      video_width, video_height = 1080, 1080
+    """
+    video_orientation = "landscape"
+    video_width, video_height = 1920, 1080
+    api_key = (config.pexels_api_keys)
+    headers = {
+        "Authorization": api_key,
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
+    }
+    # Build URL
+    params = {"query": search_term, "per_page": 20, "orientation": video_orientation}
+    query_url = f"https://api.pexels.com/videos/search?{urlencode(params)}"
+
+    r = requests.get(
+        query_url,
+        headers=headers,
+        proxies=[],
+        verify=False,
+        timeout=(30, 60),
+    )
+    response = r.json()
+    video_items = []
+    if "videos" not in response:
+        return video_items
+    videos = response["videos"]
+    # loop through each video in the result
+    for v in videos:
+        duration = v["duration"]
+        # check if video has desired minimum duration
+        if duration < minimum_duration:
+            continue
+        video_files = v["video_files"]
+        # loop through each url to determine the best quality
+        for video in video_files:
+            w = int(video["width"])
+            h = int(video["height"])
+            if w == video_width and h == video_height:
+                item = {
+                    "provider": "pexels",
+                    "url": video["link"],
+                    "duration": duration,
+                    "search_term": search_term
+                }
+                video_items.append(item)
+    return video_items
+
+
+# pixabay视频下载
+def search_videos_pixabay(
+        search_term: str,
+        minimum_duration: int
+):
+    video_width, video_height = 1920, 1080
+    api_key = config.pixabay_api_keys
+    # Build URL
+    params = {
+        "q": search_term,
+        "video_type": "all",  # Accepted values: "all", "film", "animation"
+        "per_page": 50,
+        "key": api_key,
+    }
+    query_url = f"https://pixabay.com/api/videos/?{urlencode(params)}"
+
+    r = requests.get(
+        query_url, proxies=config.proxy, verify=False, timeout=(30, 60)
+    )
+    response = r.json()
+    video_items = []
+    if "hits" not in response:
+        return video_items
+    videos = response["hits"]
+    # loop through each video in the result
+    for v in videos:
+        duration = v["duration"]
+        # check if video has desired minimum duration
+        if duration < minimum_duration:
+            continue
+        video_files = v["videos"]
+        # loop through each url to determine the best quality
+        for video_type in video_files:
+            video = video_files[video_type]
+            w = int(video["width"])
+            if w >= video_width:
+                item = {
+                    "provider": "pixabay",
+                    "url": video["url"],
+                    "duration": duration,
+                    "search_term": search_term
+                }
+                video_items.append(item)
+    return video_items
+
+
+def download_video(video_info):
+    # 设置保存目录
+    save_dir = config.ROOT_DIR_WIN / "static/source_videos"
+    url = video_info['url']
+    duration = video_info['duration']
+    search_term = video_info['search_term']
+    """下载单个视频到指定目录"""
+    # 创建目录（如果不存在）
+    os.makedirs(save_dir, exist_ok=True)
+    # 从URL提取文件名
+    filename = url.split('/')[-1]
+    # 发送请求并下载
+    response = requests.get(url, stream=True)
+    response.raise_for_status()  # 检查请求状态
+    filepath = os.path.join(save_dir, f"{search_term}-{duration}-{filename}")
+    # 写入文件
+    with open(filepath, 'wb') as f:
+        for chunk in response.iter_content(chunk_size=8192):
+            if chunk:
+                f.write(chunk)
+    # 解析视频具体内容
+    video_analyse_result = use_video_analyse.video_analyze(filepath)
+    description = video_analyse_result[0].get("description")
+    # 获取并清理描述
+    clean_description = re.sub(r'[\\/*?:"<>|]', "-", (description)[:50]).strip()  # 限制长度
+    # 构建新文件名
+    file_final_path = os.path.join(save_dir, f"{search_term}-{duration}-{clean_description}-{filename}")
+    # 重命名文件
+    os.rename(filepath, file_final_path)
+    print(f"已下载：{filename}")
+    return True
+
+
 if __name__ == '__main__':
     # Bilbili Title 奥巴马开学演讲，纯英文字幕
-    video_url = 'https://www.bilibili.com/video/BV1Tt411P72Q/'
-    download_videos_from_urls(video_url)
+    # video_url = 'https://www.bilibili.com/video/BV1Tt411P72Q/'
+    # download_videos_from_urls(video_url)
+    print(f"开始下载任务:")
+    keywords = ["lost love", "moonlight", "dandelion", "chance", "touch"]
+    for keyword in keywords:
+        print(f"关键词:{keyword}")
+        video_infos = search_videos_pexels(keyword, 0)
+        # 随机选择？个URL
+        video_infos = random.sample(video_infos, 1)
+        # 执行下载
+        for video_info in video_infos:
+            download_video(video_info)
+    print("下载任务完成")
