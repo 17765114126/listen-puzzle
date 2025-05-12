@@ -27,7 +27,7 @@ import json
 import os
 import re
 import sys
-
+import config as project_config
 import torch
 from data.sovits_v4.text.LangSegmenter import LangSegmenter
 
@@ -63,11 +63,15 @@ for i in range(4):
         _[-1].append(pretrained_sovits_name[i])
 pretrained_gpt_name, pretrained_sovits_name = _
 
-gpt_path = "D:\develop\project\GPT-SoVITS\GPT_SoVITS\pretrained_models/s1v3.ckpt"
-sovits_path = "D:\develop\project\GPT-SoVITS\GPT_SoVITS\pretrained_models\gsv-v4-pretrained\s2Gv4.pth"
 
-bert_path = "D:\develop\project\GPT-SoVITS\GPT_SoVITS\pretrained_models\chinese-roberta-wwm-ext-large"
-cnhubert_base_path = "D:\develop\project\GPT-SoVITS\GPT_SoVITS\pretrained_models\chinese-hubert-base"
+# gpt_path = "D:\develop\project\listen-puzzle\models\pretrained_models/s1v3.ckpt"
+
+gpt_path = f"{project_config.ROOT_DIR_WIN}\models\pretrained_models\s1v3.ckpt"
+
+sovits_path = f"{project_config.ROOT_DIR_WIN}\models\pretrained_models\gsv-v4-pretrained\s2Gv4.pth"
+
+bert_path = f"{project_config.ROOT_DIR_WIN}\models\pretrained_models\chinese-roberta-wwm-ext-large"
+cnhubert_base_path = f"{project_config.ROOT_DIR_WIN}\models\pretrained_models\chinese-hubert-base"
 
 is_share = os.environ.get("is_share", "False")
 is_share = eval(is_share)
@@ -374,10 +378,10 @@ def change_gpt_weights(gpt_path):
     #     data["GPT"][version] = gpt_path
     # with open("weight.json", "w") as f:
     #     f.write(json.dumps(data))
-
-
+print("======================================")
+print(gpt_path)
 change_gpt_weights(gpt_path)
-os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
+
 import torch
 
 now_dir = os.getcwd()
@@ -388,7 +392,7 @@ def init_bigvgan():
     from BigVGAN import bigvgan
 
     bigvgan_model = bigvgan.BigVGAN.from_pretrained(
-        "D:\develop\project\GPT-SoVITS\GPT_SoVITS\pretrained_models\models--nvidia--bigvgan_v2_24khz_100band_256x",
+        f"{project_config.ROOT_DIR_WIN}\models\pretrained_models\models--nvidia--bigvgan_v2_24khz_100band_256x",
         use_cuda_kernel=False,
     )  # if True, RuntimeError: Ninja is required to load C++ extensions
     # remove weight norm in the model and set to eval mode
@@ -422,7 +426,7 @@ def init_hifigan():
     hifigan_model.eval()
     hifigan_model.remove_weight_norm()
     state_dict_g = torch.load(
-        "D:\develop\project\GPT-SoVITS\GPT_SoVITS\pretrained_models/gsv-v4-pretrained/vocoder.pth", map_location="cpu")
+        f"{project_config.ROOT_DIR_WIN}\models\pretrained_models/gsv-v4-pretrained/vocoder.pth", map_location="cpu")
     print("loading vocoder", hifigan_model.load_state_dict(state_dict_g))
     if bigvgan_model:
         bigvgan_model = bigvgan_model.cpu()

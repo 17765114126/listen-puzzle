@@ -17,6 +17,7 @@ MIN_DURATION = 2  # 场景最小持续时间（秒）
 # RESIZE_SIZE = (320, 320)
 RESIZE_SIZE = (224, 224)
 
+
 def normalize_text(text):
     text = text.lower().strip()
     text = re.sub(r'[^\w\s]', '', text)
@@ -111,6 +112,6 @@ def video_analyze(video_path):
 
 
 if __name__ == '__main__':
-    video_path = config.ROOT_DIR_WIN / "static/source_videos/touch-13-3249676-hd_1920_1080_25fps.mp4"
+    video_path = config.ROOT_DIR_WIN / config.source_videos_dir / "touch-13-3249676-hd_1920_1080_25fps.mp4"
     result = video_analyze(video_path)
     print(result[0].get("description"))

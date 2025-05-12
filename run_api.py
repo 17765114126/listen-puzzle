@@ -12,12 +12,14 @@ import uuid
 from api.svc_api import router as api_interface
 from api.little_tool_api import router as api_tool
 from api.video_api import router as video_api
+from api.llm_clip_api import router as llm_clip_api
 
 app = FastAPI()
 
 app.include_router(api_interface)
 app.include_router(api_tool)
 app.include_router(video_api)
+app.include_router(llm_clip_api)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

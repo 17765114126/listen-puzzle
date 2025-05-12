@@ -9,7 +9,7 @@ from data import use_video_analyse
 import re
 
 
-def download_video(info, output_dir, resolution='1080p'):
+def dlp_download_video(info, output_dir, resolution='1080p'):
     """
     下载单个视频，并将其保存到指定目录。
 
@@ -26,12 +26,15 @@ def download_video(info, output_dir, resolution='1080p'):
     # 准备下载选项
     ydl_opts = {
         'format': f'bestvideo[ext=mp4][height<={resolution}]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-        'writeinfojson': True,
-        'writethumbnail': True,
+        'writeinfojson': False,  # 关闭元数据文件生成
+        'writethumbnail': False,  # 关闭缩略图下载
         'outtmpl': os.path.join(output_dir, f"{series}{season}{title}.%(ext)s"),
         'ignoreerrors': True,
         'cookiefile': 'cookies.txt' if os.path.exists("cookies.txt") else None,
         'noplaylist': True,  # 不下载播放列表（仅当前视频）,
+        'no_check_certificate': True,  # 跳过 SSL 验证
+        'ssl_version': 'TLSv1_2',  # 强制 TLS 1.2
+        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
     }
 
     # 执行下载
@@ -40,17 +43,15 @@ def download_video(info, output_dir, resolution='1080p'):
     return output_dir
 
 
-def download_videos_from_urls(urls, output_dir, resolution='1080p', limit=5):
+def download_videos_from_url(url, output_dir, resolution='1080p', limit=5):
     """
     从给定的URL列表中下载视频。
 
-    :param urls: 单个或多个视频/播放列表的URL列表
+    :param url: 单个或多个视频/播放列表的URL列表
     :param resolution: 目标分辨率，默认为'1080p'
     :param limit: 如果是播放列表，则限制下载的视频数量
     :return: 下载文件夹路径的消息
     """
-    # 将通过竖线分隔的字符串转换为列表
-    url_list = [url.strip() for url in urls.split('|') if url.strip()]
 
     # 设置用于提取视频信息的选项
     extraction_options = {
@@ -61,23 +62,13 @@ def download_videos_from_urls(urls, output_dir, resolution='1080p', limit=5):
     }
 
     # 收集所有要下载的视频信息
-    video_info_list = []
-    with yt_dlp.YoutubeDL(extraction_options) as ydl:
-        for url in url_list:
-            result = ydl.extract_info(url, download=False)
-            if 'entries' in result:
-                # 如果结果包含条目，说明这是个播放列表
-                video_info_list.extend(result['entries'])
-            else:
-                # 否则，它是单个视频
-                video_info_list.append(result)
+    ydl = yt_dlp.YoutubeDL(extraction_options)
+    result = ydl.extract_info(url, download=False)
 
-    # 对于每个视频信息，调用download_video进行下载
-    for video_info in video_info_list:
-        download_video(video_info, output_dir, resolution)
-    title = sanitize_title(video_info_list[0]['title'])
-    title += ".mp4"
-    return title
+    # 调用download_video进行下载
+    dlp_download_video(result, output_dir, resolution)
+    title = sanitize_title(result['title']) + ".mp4"
+    return title, result['duration']
 
 
 # pexels视频下载
@@ -184,7 +175,7 @@ def search_videos_pixabay(
 
 def download_video(video_info):
     # 设置保存目录
-    save_dir = config.ROOT_DIR_WIN / "static/source_videos"
+    save_dir = config.ROOT_DIR_WIN / config.source_videos_dir
     url = video_info['url']
     duration = video_info['duration']
     search_term = video_info['search_term']
@@ -215,18 +206,28 @@ def download_video(video_info):
     return True
 
 
-if __name__ == '__main__':
-    # Bilbili Title 奥巴马开学演讲，纯英文字幕
-    # video_url = 'https://www.bilibili.com/video/BV1Tt411P72Q/'
-    # download_videos_from_urls(video_url)
+def keywords_download(keywords):
     print(f"开始下载任务:")
-    keywords = ["lost love", "moonlight", "dandelion", "chance", "touch"]
     for keyword in keywords:
         print(f"关键词:{keyword}")
         video_infos = search_videos_pexels(keyword, 0)
+        count = 2
+        if len(video_infos) < count:
+            print(f"警告：关键词 '{keyword}' 的视频数量不足 {count} 个（实际 {len(video_infos)} 个），跳过下载")
+            continue  # 或改为下载所有可用视频
         # 随机选择？个URL
-        video_infos = random.sample(video_infos, 1)
+        video_infos = random.sample(video_infos, count)
         # 执行下载
         for video_info in video_infos:
-            download_video(video_info)
+            try:
+                download_video(video_info)
+            except Exception as e:
+                print(f"video_info：{video_info}，下载异常：{e}")
     print("下载任务完成")
+    return True
+
+
+if __name__ == '__main__':
+    # Bilbili Title 奥巴马开学演讲，纯英文字幕
+    video_url = 'https://www.bilibili.com/video/BV1Tt411P72Q/'
+    download_videos_from_url(video_url)

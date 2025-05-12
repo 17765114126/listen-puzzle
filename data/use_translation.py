@@ -1,7 +1,7 @@
 import translators as ts
 
 import config
-from api import ollama_api
+from data import use_ollama
 
 
 # 搜索引擎
@@ -119,7 +119,7 @@ def ollama_translate(text, lang="zh"):
     <source>[TEXT]</source>
 
     Translation:"""
-    return ollama_api.ollama_generate(config.ollama_translate_model, prompt_zh)
+    return use_ollama.ollama_generate(config.ollama_translate_model, prompt_zh)
 
 
 def translator_build(messages, to_language='zh', translator_server='bing'):

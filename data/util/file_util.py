@@ -1,7 +1,7 @@
 import os
 import subprocess
 import re
-from pathlib import Path
+import shutil
 
 
 def sanitize_title(title):
@@ -32,12 +32,28 @@ def join_suffix(folder, file_url):
     return os.path.join(folder, file_url)
 
 
-# 删除文件
 def del_file(file_path):
-    # 检查文件是否存在
-    if os.path.exists(file_path):
-        # 删除文件
-        os.remove(file_path)
+    if not os.path.exists(file_path):
+        print(f"路径 {file_path} 不存在")
+        return
+
+    try:
+        if os.path.isfile(file_path):
+            # 删除单个文件
+            os.remove(file_path)
+            print(f"文件 {file_path} 已删除")
+        else:
+            # 清空文件夹下所有内容
+            for filename in os.listdir(file_path):
+                file_item = os.path.join(file_path, filename)
+                if os.path.isfile(file_item) or os.path.islink(file_item):
+                    os.unlink(file_item)  # 删除文件或符号链接
+                else:
+                    shutil.rmtree(file_item)  # 递归删除子目录
+            print(f"文件夹 {file_path} 内容已清空")
+
+    except Exception as e:
+        print(f"删除操作失败，错误信息: {e}")
 
 
 # 保存文本到文件

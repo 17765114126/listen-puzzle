@@ -1,18 +1,19 @@
 # 生成一个 requirements.txt，在项目根目录下运行：pipreqs .
 #pipreqs
-faster_whisper==1.0.1
-gradio==5.4.0
+# gradio==5.4.0
 # openai_whisper==20231117
+# edge_tts==6.1.13
+
+faster_whisper==1.0.1
 numpy<2
-requests==2.32.3
+requests
 sounddevice==0.4.7
-yt_dlp==2024.10.22
-translators==5.9.3
+yt_dlp
+translators==5.9.9
 pysrt
-edge_tts==6.1.13
 audio_separator
 xxhash
-pip install opencv-python
+opencv-python
 
 peft
 transformers>=4.43

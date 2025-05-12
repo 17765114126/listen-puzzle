@@ -1,5 +1,6 @@
 from fastapi.responses import FileResponse
 from data import use_ffmpeg, video_downloader, use_fast_whisper
+from data.util import file_util
 from fastapi import APIRouter
 from api.Do import BaseReq
 from pathlib import Path
@@ -11,13 +12,19 @@ router = APIRouter()
 # 下载视频
 @router.post("/download_video")
 async def download_video(req: BaseReq):
-    title = video_downloader.download_videos_from_urls(req.video_url, config.UPLOAD_DIR)
+    title, duration= video_downloader.download_videos_from_url(req.video_url, config.UPLOAD_DIR)
     access_url_path = config.ROOT_DIR_WIN / "static" / "uploads" / title
-    video_info = use_ffmpeg.get_info(access_url_path)
+    # video_info = use_ffmpeg.get_info(access_url_path)
+    # 转换时长格式
+    try:
+        duration = file_util.seconds_to_hms(duration)
+    except (ValueError, TypeError):
+        duration = "00:00:00"  # 异常时返回默认值
     return {
         "videoWebPath": f"{config.UPLOAD_DIR}{title}",
         "videoPath": access_url_path,
-        "duration": video_info["duration"]
+        "duration": duration
+        # "duration": video_info["duration"]
     }
 
 

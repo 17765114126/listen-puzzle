@@ -295,7 +295,9 @@ def get_info(video_path):
         duration = file_util.seconds_to_hms(raw_duration)
     except (ValueError, TypeError):
         duration = "00:00:00"  # 异常时返回默认值
-    return {"filename": get_file_name(filename), "duration": f"{duration}", "format": format}
+    return {"filename": get_file_name(filename),
+            "duration": f"{duration}",
+            "format": format}
 
 
 # 提取音频
@@ -554,7 +556,7 @@ def concatenate_videos_with_transitions(clip_infos, output_path):
 
     intermediate_files = []
     for clip in adjusted_clips:
-        source_path = config.ROOT_DIR_WIN / "static/source_videos" / clip['source_name']
+        source_path = config.ROOT_DIR_WIN / config.source_videos_dir / clip['source_name']
         output_file = cut_video_silence(
             source_path,
             str(clip['start_time']),

@@ -1,6 +1,6 @@
 from faster_whisper import WhisperModel
 import os
-from data import use_translation
+# from data import use_translation
 
 
 def transcribe(audio_path, device_type, model_type, output_format_type, is_translate, subtitle_double,
@@ -14,16 +14,16 @@ def transcribe(audio_path, device_type, model_type, output_format_type, is_trans
     segments_txt = ""
     if output_format_type == "txt":
         for segment in segments:
-            if is_translate:
-                # 翻译
-                if subtitle_double:
-                    # 双语字幕
-                    segments_txt += segment.text + "\n"
-                segments_txt += use_translation.translator_response(segment.text, subtitle_language,
-                                                                    translator_engine) + "\n"
-            else:
+            # if is_translate:
+            #     # 翻译
+            #     if subtitle_double:
+            #         # 双语字幕
+            #         segments_txt += segment.text + "\n"
+            #     segments_txt += use_translation.translator_response(segment.text, subtitle_language,
+            #                                                         translator_engine) + "\n"
+            # else:
                 # 原文
-                segments_txt += segment.text + "\n"
+            segments_txt += segment.text + "\n"
     # SRT文件
     if output_format_type == "srt":
         for i, segment in enumerate(segments, start=1):
@@ -34,16 +34,16 @@ def transcribe(audio_path, device_type, model_type, output_format_type, is_trans
             subtitle_text = segment.text.strip()
             segments_txt += f"{i}\n"
             segments_txt += f"{start_str} --> {end_str}\n"
-            if is_translate:
-                if subtitle_double:
-                    # 双语字幕
-                    segments_txt += f"{subtitle_text}\n"
-                # 翻译
-                segments_txt += use_translation.translator_build(subtitle_text, subtitle_language,
-                                                                 translator_engine) + "\n\n"
-            else:
+            # if is_translate:
+            #     if subtitle_double:
+            #         # 双语字幕
+            #         segments_txt += f"{subtitle_text}\n"
+            #     # 翻译
+            #     segments_txt += use_translation.translator_build(subtitle_text, subtitle_language,
+            #                                                      translator_engine) + "\n\n"
+            # else:
                 # 原文
-                segments_txt += f"{subtitle_text}\n\n"
+            segments_txt += f"{subtitle_text}\n\n"
     return segments_txt
 
 

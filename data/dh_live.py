@@ -1,11 +1,12 @@
 from audio_separator.separator import Separator
-
 from pydub import AudioSegment
+import config
 
 
 # 分离人声与伴奏
 def do_s(audio, output):
-    separator = Separator(model_file_dir="D:/hf-model/separated_model/", output_dir=output)
+    model_path = config.ROOT_DIR_WIN / "models/separated_model"
+    separator = Separator(model_file_dir=model_path, output_dir=output)
     separator.load_model()
     outfiles = separator.separate(audio)
     print(outfiles)

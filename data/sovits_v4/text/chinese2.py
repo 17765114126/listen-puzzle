@@ -22,6 +22,7 @@ import logging
 
 jieba_fast.setLogLevel(logging.CRITICAL)
 import jieba_fast.posseg as psg
+import config
 
 # is_g2pw_str = os.environ.get("is_g2pw", "True")##默认开启
 # is_g2pw = False#True if is_g2pw_str.lower() == 'true' else False
@@ -32,8 +33,8 @@ if is_g2pw:
 
     parent_directory = os.path.dirname(current_file_path)
     g2pw = G2PWPinyin(
-        model_dir="D:/develop/project/GPT-SoVITS/GPT_SoVITS/text/G2PWModel",
-        model_source=os.environ.get("bert_path", "D:\develop\project\GPT-SoVITS\GPT_SoVITS\pretrained_models\chinese-roberta-wwm-ext-large"),
+        model_dir=f"{config.ROOT_DIR_WIN}/data/sovits_v4/text/G2PWModel",
+        model_source=os.environ.get("bert_path", f"{config.ROOT_DIR_WIN}\models\pretrained_models\chinese-roberta-wwm-ext-large"),
         v_to_u=False,
         neutral_tone_with_five=True,
     )
