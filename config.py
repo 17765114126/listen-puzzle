@@ -17,9 +17,7 @@ def _get_executable_path():
 
 # 程序根目录
 ROOT_DIR = _get_executable_path()
-
 _root_path = Path(ROOT_DIR)
-
 FFMPEG_BIN = "ffmpeg"
 FFPROBE_BIN = "ffprobe"
 # ffmpeg
@@ -36,10 +34,9 @@ else:
     if Path(ROOT_DIR + '/ffmpeg/ffprobe').is_file():
         FFPROBE_BIN = ROOT_DIR + '/ffmpeg/ffprobe'
 
+
 api_host = 9527
-
 web_host = 9528
-
 UPLOAD_DIR = "static/uploads/"
 source_videos_dir = "static/source_videos/"
 
@@ -48,6 +45,8 @@ model_name = "gemma3:12b"
 api_key = 'sk-21ea07e9479d473698f7b010fd98ae70'
 pexels_api_keys = "AQanz5J1ptLpe8EzANVz4fFN9R0friFxQLnvzpTjTLFbwKjpR3eL6XLA"
 pixabay_api_keys = ""
+
+
 #####################################
 resolution = [
     "4320p",
@@ -71,17 +70,7 @@ whisper_model = [
     "medium",
     "large-v3"
 ]
-whisper_device = ["cpu", "cuda"]
-whisper_language = [
-    "auto",
-    "zh",
-    "en",
-    "ru",
-    "fr",
-    "de",
-    "ko",
-    "ja"
-]
+
 translator_language = [
     "zh",
     "en",

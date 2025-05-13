@@ -52,14 +52,14 @@ def clip_prompt(creative, source_infos):
       "response_example":     
       [
          {{
-          "source_name": "moonlight-120-...-3851984-hd_1920_1080_30fps.mp4",
+          "source_name": "3851984-hd_1920_1080_30fps.mp4",
           "video_duration": 120,
           "start_time": "00:01:05.200",
           "end_time": "00:01:10.800",  // 实际截取5.6秒
           "transition": "dissolve"
         }},
         {{
-          "source_name": "dandelion-33-...-4438190-hd_1920_1080_24fps.mp4",
+          "source_name": "4438190-hd_1920_1080_24fps.mp4",
           "video_duration": 33,
           "start_time": "00:00:02.500",
           "end_time": "00:00:08.000",  // 实际截取5.5秒

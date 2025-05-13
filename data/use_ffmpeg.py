@@ -1,6 +1,7 @@
 import os, re, sys, json, subprocess
 from data.util.file_util import get_download_folder, get_file_name, get_file_suffix, get_file_name_no_suffix, \
     del_file
+from data import video_downloader
 import config
 from pathlib import Path
 from data.util import file_util
@@ -561,7 +562,7 @@ def concatenate_videos_with_transitions(clip_infos, output_path):
             source_path,
             str(clip['start_time']),
             end_time=str(clip['end_time']),
-            output_suffix=f"(剪切_{len(intermediate_files)})"
+            output_suffix=f"({len(intermediate_files)})"
         )
         intermediate_files.append(output_file)
     print("========================合成视频前处理=================================")
@@ -631,15 +632,8 @@ def check_nvidia():
 
 
 def get_video_duration(input_path):
-    # 获取视频的总时长
-    duration_command = [
-        '-v', 'error',
-        '-show_entries', 'format=duration',
-        '-of', 'default=noprint_wrappers=1:nokey=1',
-        input_path
-    ]
-    result = run_ffprobe_cmd(duration_command)
-    return float(result.stdout.strip())
+    duration, description = video_downloader.read_metadata(input_path)
+    return float(duration.strip())
 
 
 # cmd执行ffmpeg命令

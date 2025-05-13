@@ -104,7 +104,7 @@ async def add_audio_to_video(req: BaseReq):
 @router.post("/transcribe")
 async def transcribe(req: BaseReq):
     subtitle_content = use_fast_whisper.transcribe(
-        req.input_path, req.device, req.model,
+        req.input_path, req.model,
         req.output_format, req.is_translate, req.subtitle_double,
         req.translator_engine, req.subtitle_language
     )

@@ -7,6 +7,7 @@ import requests
 from urllib.parse import urlencode
 from data import use_video_analyse
 import re
+from mutagen.mp4 import MP4
 
 
 def dlp_download_video(info, output_dir, resolution='1080p'):
@@ -178,7 +179,7 @@ def download_video(video_info):
     save_dir = config.ROOT_DIR_WIN / config.source_videos_dir
     url = video_info['url']
     duration = video_info['duration']
-    search_term = video_info['search_term']
+    # search_term = video_info['search_term']
     """下载单个视频到指定目录"""
     # 创建目录（如果不存在）
     os.makedirs(save_dir, exist_ok=True)
@@ -187,7 +188,7 @@ def download_video(video_info):
     # 发送请求并下载
     response = requests.get(url, stream=True)
     response.raise_for_status()  # 检查请求状态
-    filepath = os.path.join(save_dir, f"{search_term}-{duration}-{filename}")
+    filepath = os.path.join(save_dir, filename)
     # 写入文件
     with open(filepath, 'wb') as f:
         for chunk in response.iter_content(chunk_size=8192):
@@ -195,15 +196,27 @@ def download_video(video_info):
                 f.write(chunk)
     # 解析视频具体内容
     video_analyse_result = use_video_analyse.video_analyze(filepath)
+    # 获取描述
     description = video_analyse_result[0].get("description")
-    # 获取并清理描述
-    clean_description = re.sub(r'[\\/*?:"<>|]', "-", (description)[:50]).strip()  # 限制长度
-    # 构建新文件名
-    file_final_path = os.path.join(save_dir, f"{search_term}-{duration}-{clean_description}-{filename}")
-    # 重命名文件
-    os.rename(filepath, file_final_path)
+    # 添加元数据
+    video = MP4(filepath)
+    video["\xa9des"] = description  # 标准描述字段
+    video["\xa9alb"] = str(duration)  # 使用专辑字段存储时长
+    video.save()
     print(f"已下载：{filename}")
     return True
+
+
+def read_metadata(filepath):
+    # 读取元数据
+    try:
+        video = MP4(filepath)
+        description = video.get("\xa9des", ["无描述"])[0]
+        duration = video.get("\xa9alb", ["未知时长"])[0]
+        return duration, description
+    except Exception as e:
+        print(f"读取元数据失败: {str(e)}")
+        return {}
 
 
 def keywords_download(keywords):

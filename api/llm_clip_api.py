@@ -14,9 +14,12 @@ def get_source_videos():
     folder_file_names = file_util.get_folder_file_name(save_dir)
     source_infos = []
     for folder_file_name in folder_file_names:
+        duration, description = video_downloader.read_metadata(save_dir / folder_file_name)
         source_info = {
             "source_name": folder_file_name,
-            "source_url": f"{config.source_videos_dir}{folder_file_name}"
+            "source_url": f"{config.source_videos_dir}{folder_file_name}",
+            "description": description,
+            "duration": duration,
         }
         source_infos.append(source_info)
     return source_infos
@@ -52,11 +55,11 @@ def videos_transitions(req: BaseReq):
     folder_file_names = file_util.get_folder_file_name(save_dir)
     source_infos = []
     for folder_file_name in folder_file_names:
-        parts = folder_file_name.split("-")
+        duration, description = video_downloader.read_metadata(save_dir / folder_file_name)
         source_info = {
             "source_name": folder_file_name,
-            "video_duration": parts[1],
-            "video_describe": parts[2]
+            "video_duration": duration,
+            "video_describe": description
         }
         source_infos.append(source_info)
     clip_prompt = prompt_config.clip_prompt(req.creative, source_infos)
