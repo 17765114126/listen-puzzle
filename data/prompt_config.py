@@ -43,7 +43,6 @@ def clip_prompt(creative, source_infos):
         "processing_logic": [
           "STEP 1: 语义分析 - 解析文案中的关键词/情感/节奏",
           "STEP 2: 时长校验 - 验证所有end_time ≤ video_duration",
-          "STEP 3: 语义映射 - 建立创意脚本关键词与视频描述的匹配矩阵",
           "STEP 3: 节奏规划 - 按『建立-发展-高潮-收尾』结构分配时段",
           "STEP 4: 技术校验 - 确保片段间无黑场/跳帧/分辨率冲突"
           "STEP 5: 冲突解决 - 当规则冲突时按critical_rules > quality_standards优先级处理"
@@ -57,13 +56,6 @@ def clip_prompt(creative, source_infos):
           "start_time": "00:01:05.200",
           "end_time": "00:01:10.800",  // 实际截取5.6秒
           "transition": "dissolve"
-        }},
-        {{
-          "source_name": "4438190-hd_1920_1080_24fps.mp4",
-          "video_duration": 33,
-          "start_time": "00:00:02.500",
-          "end_time": "00:00:08.000",  // 实际截取5.5秒
-          "transition": "cut"
         }}
       ],
       "validation_rules": {{

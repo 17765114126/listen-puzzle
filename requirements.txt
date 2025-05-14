@@ -24,5 +24,8 @@ x_transformers
 pytorch_lightning
 jieba_fast
 pypinyin
-cn2an
 opencc
+
+cn2an
+g2p_en
+wordsegment

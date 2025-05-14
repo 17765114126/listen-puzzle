@@ -39,18 +39,18 @@ def del_source_videos():
 
 @router.post("/llm_get_source")
 def llm_get_source(req: BaseReq):
-    print("========================llm获取搜索关键词=================================")
+    print("=================================llm获取搜索关键词=================================")
     keywords_prompt = prompt_config.keywords_prompt(req.creative)
     keywords_resp = use_llm._generate_response(keywords_prompt)
     keywords = keywords_resp.split(",")
     print(keywords)
-    print("========================下载关键词对应视频=================================")
+    print("=================================下载关键词对应视频=================================")
     return video_downloader.keywords_download(keywords)
 
 
 @router.post("/videos_transitions")
 def videos_transitions(req: BaseReq):
-    print("========================llm获取剪辑视频提示词=================================")
+    print("=================================llm获取剪辑视频提示词=================================")
     save_dir = config.ROOT_DIR_WIN / config.source_videos_dir
     folder_file_names = file_util.get_folder_file_name(save_dir)
     source_infos = []
@@ -66,7 +66,7 @@ def videos_transitions(req: BaseReq):
     print(clip_prompt)
     clip_resp = use_llm._generate_response(clip_prompt)
     bracket_json = string_util.get_bracket_json(clip_resp)
-    print("========================根据llm返回视频信息进行剪辑=================================")
+    print("=================================根据llm返回视频信息进行剪辑=================================")
     print(bracket_json)
     output = f"{config.UPLOAD_DIR}concatenate_videos.mp4"
     use_ffmpeg.concatenate_videos_with_transitions(bracket_json, output)

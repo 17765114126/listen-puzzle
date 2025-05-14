@@ -63,7 +63,6 @@ for i in range(4):
         _[-1].append(pretrained_sovits_name[i])
 pretrained_gpt_name, pretrained_sovits_name = _
 
-
 # gpt_path = "D:\develop\project\listen-puzzle\models\pretrained_models/s1v3.ckpt"
 
 gpt_path = f"{project_config.ROOT_DIR_WIN}\models\pretrained_models\s1v3.ckpt"
@@ -378,6 +377,8 @@ def change_gpt_weights(gpt_path):
     #     data["GPT"][version] = gpt_path
     # with open("weight.json", "w") as f:
     #     f.write(json.dumps(data))
+
+
 print("======================================")
 print(gpt_path)
 change_gpt_weights(gpt_path)
@@ -658,8 +659,6 @@ def audio_sr(audio, sr):
     return sr_model(audio, sr)
 
 
-##ref_wav_path+prompt_text+prompt_language+text(单个)+text_language+top_k+top_p+temperature
-# cache_tokens={}#暂未实现清理机制
 cache = {}
 
 
@@ -669,18 +668,40 @@ def get_tts_wav(
         prompt_language,
         text,
         text_language,
-        how_to_cut=i18n("不切"),
-        top_k=20,
-        top_p=0.6,
-        temperature=0.6,
-        ref_free=False,
-        speed=1,
-        if_freeze=False,
+        how_to_cut=None,
+        top_k=None,
+        top_p=None,
+        temperature=None,
+        ref_free=None,
+        speed=None,
+        if_freeze=None,
         inp_refs=None,
-        sample_steps=8,
-        if_sr=False,
-        pause_second=0.3,
+        sample_steps=None,
+        if_sr=None,
+        pause_second=None,
 ):
+    if how_to_cut is None:
+        how_to_cut = i18n("凑四句一切")
+    if top_k is None:
+        top_k = 20
+    if top_p is None:
+        top_p = 0.6
+    if temperature is None:
+        temperature = 0.6
+    if ref_free is None:
+        ref_free = False
+    if speed is None:
+        speed = 1
+    if if_freeze is None:
+        if_freeze = False
+    if sample_steps is None:
+        sample_steps = 8
+    if if_sr is None:
+        if_sr = False
+    if pause_second is None:
+        pause_second = 0.3
+
+
     global cache
     if ref_wav_path:
         pass
@@ -707,7 +728,6 @@ def get_tts_wav(
             prompt_text += "。" if prompt_language != "en" else "."
         print(i18n("实际输入的参考文本:"), prompt_text)
     text = text.strip("\n")
-    # if (text[0] not in splits and len(get_first(text)) < 4): text = "。" + text if text_language != "en" else "." + text
 
     print(i18n("实际输入的目标文本:"), text)
     zero_wav = np.zeros(

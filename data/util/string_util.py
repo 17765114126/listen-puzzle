@@ -1,5 +1,6 @@
 import json
 
+
 # 分析str字幕文件
 def parse_srt(srt_text):
     subs = []
@@ -54,3 +55,31 @@ def get_bracket_json(clip_resp):
     json_str = clip_resp[start:end].strip()  # 去除首尾空白
     return json.loads(json_str)
 
+
+def detect_prompt_language(text: str) -> str:
+    # 判断语种
+    has_japanese_kana = False
+    has_chinese = False
+    has_english = False
+
+    for char in text:
+        # 检测日文假名（平假名和片假名）
+        if '\u3040' <= char <= '\u309F' or '\u30A0' <= char <= '\u30FF':
+            has_japanese_kana = True
+        # 检测汉字（包括中文和日文汉字）
+        elif '\u4e00' <= char <= '\u9fff':
+            has_chinese = True
+        # 检测英文字母
+        elif 'a' <= char.lower() <= 'z':
+            has_english = True
+
+    # 判断语种
+    if has_japanese_kana:
+        return '日英混合' if has_english else '日文'
+    elif has_chinese:
+        return '中英混合' if has_english else '中文'
+    elif has_english:
+        return '英文'
+    else:
+        # 默认返回英文（可根据需求调整）
+        return '英文'

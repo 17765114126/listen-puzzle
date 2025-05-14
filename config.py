@@ -39,6 +39,7 @@ api_host = 9527
 web_host = 9528
 UPLOAD_DIR = "static/uploads/"
 source_videos_dir = "static/source_videos/"
+source_audios_dir = "static/source_timbre/"
 
 provider = "ollama"
 model_name = "gemma3:12b"

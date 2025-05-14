@@ -53,10 +53,3 @@ def transcribe(audio_path, model_type, output_format_type, is_translate, subtitl
                 # 原文
                 segments_txt += f"{subtitle_text}\n\n"
     return segments_txt
-
-# if __name__ == '__main__':
-# os.environ['HF_ENDPOINT'] = "https://hf-mirror.com/"
-# os.environ['HF_HOME'] = 'D:/hf-model'
-# input_path = "D:\\sucai\\33.wav"
-# segments_txt = transcribe(input_path, "cuda", "large", "srt", False, False, "google", "zh")
-# print(segments_txt)
