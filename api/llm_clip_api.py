@@ -3,12 +3,14 @@ from data.util import file_util, string_util
 import config
 from fastapi import APIRouter
 from api.Do import BaseReq
-
+from mutagen.mp4 import MP4
+import logging
 router = APIRouter()
 
 
 @router.post("/get_source_videos")
 def get_source_videos():
+    logging.info("------------------------------------------")
     # 获取已存在本地素材
     save_dir = config.ROOT_DIR_WIN / config.source_videos_dir
     folder_file_names = file_util.get_folder_file_name(save_dir)
@@ -23,6 +25,15 @@ def get_source_videos():
         }
         source_infos.append(source_info)
     return source_infos
+
+
+@router.post("/update_video_description")
+def update_video_description(req: BaseReq):
+    # 更新本地素材描述
+    video = MP4(config.source_videos_dir + req.source_url)
+    video["\xa9des"] = req.description  # 标准描述字段
+    video.save()
+    return True
 
 
 @router.post("/del_source_videos")
@@ -42,6 +53,7 @@ def llm_get_source(req: BaseReq):
     print("=================================llm获取搜索关键词=================================")
     keywords_prompt = prompt_config.keywords_prompt(req.creative)
     keywords_resp = use_llm._generate_response(keywords_prompt)
+    keywords_resp = string_util.remove_think_tags(keywords_resp)
     keywords = keywords_resp.split(",")
     print(keywords)
     print("=================================下载关键词对应视频=================================")
@@ -50,7 +62,8 @@ def llm_get_source(req: BaseReq):
 
 @router.post("/videos_transitions")
 def videos_transitions(req: BaseReq):
-    print("=================================llm获取剪辑视频提示词=================================")
+    audioUrl = req.dict().get("audioUrl", None)
+    print("=================================视频处理=================================")
     save_dir = config.ROOT_DIR_WIN / config.source_videos_dir
     folder_file_names = file_util.get_folder_file_name(save_dir)
     source_infos = []
@@ -62,16 +75,27 @@ def videos_transitions(req: BaseReq):
             "video_describe": description
         }
         source_infos.append(source_info)
-    clip_prompt = prompt_config.clip_prompt(req.creative, source_infos)
+    duration = 30
+    if audioUrl is not None:
+        audio_info = use_ffmpeg.get_info(req.audioUrl)
+        duration = audio_info["duration"]
+    print("=================================llm获取剪辑视频提示词=================================")
+    clip_prompt = prompt_config.clip_prompt(req.creative, source_infos, duration)
     print(clip_prompt)
     clip_resp = use_llm._generate_response(clip_prompt)
-    bracket_json = string_util.get_bracket_json(clip_resp)
+    keywords_resp = string_util.remove_think_tags(clip_resp)
     print("=================================根据llm返回视频信息进行剪辑=================================")
-    print(bracket_json)
-    output = f"{config.UPLOAD_DIR}concatenate_videos.mp4"
-    use_ffmpeg.concatenate_videos_with_transitions(bracket_json, output)
+    print(keywords_resp)
+    bracket_json = string_util.get_bracket_json(keywords_resp)
+    final_video = f"{config.UPLOAD_DIR}concatenate_videos.mp4"
+    use_ffmpeg.concatenate_videos_with_transitions(bracket_json, final_video)
+
+    if audioUrl is not None:
+        print("=================================合并文案音频=================================")
+        use_ffmpeg.add_audio_to_video(final_video, audioUrl, f"{config.UPLOAD_DIR}final_video.mp4")
+        final_video = f"{config.UPLOAD_DIR}final_video.mp4"
     return {
-        "concatenate_web_url": output
+        "concatenate_web_url": final_video
     }
 
 

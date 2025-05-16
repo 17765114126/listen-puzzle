@@ -325,7 +325,7 @@ def add_audio_to_video(video_path, audio_path, output_path):
         output_path  # 输出文件
     ]
     run_ffmpeg_cmd(command)
-    return "音频添加成功，文件地址为：" + output_path
+    return output_path
 
 
 # 合并视频

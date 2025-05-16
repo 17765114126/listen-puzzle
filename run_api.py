@@ -1,14 +1,10 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from data import use_ffmpeg
-import shutil
-import uvicorn
-import logging
 import config
-import os
-import uuid
-
+import shutil, os, uvicorn, uuid
+import logging
 from api.svc_api import router as api_interface
 from api.little_tool_api import router as api_tool
 from api.video_api import router as video_api
@@ -16,13 +12,13 @@ from api.llm_clip_api import router as llm_clip_api
 
 app = FastAPI()
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 app.include_router(api_interface)
 app.include_router(api_tool)
 app.include_router(video_api)
 app.include_router(llm_clip_api)
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 # 配置静态文件服务
 os.makedirs(config.UPLOAD_DIR, exist_ok=True)
@@ -52,36 +48,47 @@ def clean_upload_dir():
 
 @app.post("/upload_file_stream")
 async def upload_video(file_stream: UploadFile = File(...)):
-    # try:
-    # 1. 清理上传目录
-    # clean_upload_dir()
-
-    # # 2. 验证文件类型流
-    # if not video.content_type.startswith("video/"):
-    #     raise HTTPException(400, "仅支持视频文件上传")
-
-    # 3. 生成唯一文件名
+    # 生成唯一文件名
     file_ext = file_stream.filename.split('.')[-1]
     filename = f"{uuid.uuid4().hex}.{file_ext}"
     file_path = os.path.join(config.UPLOAD_DIR, filename)
 
-    # 4. 分块写入文件（适合大文件）
+    # 分块写入文件（适合大文件）
     with open(file_path, "wb") as buffer:
         while content := await file_stream.read(1024 * 1024):  # 每次读取1MB
             buffer.write(content)
-    access_url_path = config.ROOT_DIR_WIN / "static" / "uploads" / filename
+    access_url_path = config.ROOT_DIR_WIN / config.UPLOAD_DIR / filename
     video_info = use_ffmpeg.get_info(access_url_path)
     return {
-        "videoWebPath": f"static/uploads/{filename}",
+        "videoWebPath": f"{config.UPLOAD_DIR}{filename}",
         "videoPath": access_url_path,
         "duration": video_info["duration"]
     }
 
 
-# except RuntimeError as e:
-#     raise HTTPException(500, detail=str(e))
-# except Exception as e:
-#     raise HTTPException(500, detail=f"上传失败: {str(e)}")
+@app.post("/upload_source_file_stream")
+async def upload_source_video(file_stream: UploadFile = File(...)):
+    # 生成唯一文件名
+    file_ext = file_stream.filename.split('.')[-1]
+    filename = f"{uuid.uuid4().hex}.{file_ext}"
+    file_path = os.path.join(config.source_videos_dir, filename)
+
+    # 分块写入文件（适合大文件）
+    with open(file_path, "wb") as buffer:
+        while content := await file_stream.read(1024 * 1024):  # 每次读取1MB
+            buffer.write(content)
+    access_url_path = config.ROOT_DIR_WIN / config.source_videos_dir / filename
+    video_info = use_ffmpeg.get_info(access_url_path)
+    return {
+        "videoWebPath": f"{config.source_videos_dir}{filename}",
+        "videoPath": access_url_path,
+        "duration": video_info["duration"]
+    }
+
+
+@app.get("/loadLog")
+async def loadLog():
+    return ""
 
 
 # 使用 Python 3 提供静态文件服务命令（在dist根目录运行）: python -m http.server 8688
@@ -92,8 +99,17 @@ async def upload_video(file_stream: UploadFile = File(...)):
 def run():
     os.environ['HF_ENDPOINT'] = "https://hf-mirror.com/"
     os.environ['HF_HOME'] = 'D:/hf-model'
+
+    # 清除upload_dir
     clean_upload_dir()
-    uvicorn.run(app='run_api:app', host="127.0.0.1", port=config.api_host, reload=True)
+
+    logging.info('------主程序开始运行-------')
+    uvicorn.run(app='run_api:app',
+                host="127.0.0.1",
+                port=config.api_host,
+                reload=True,
+                access_log=True,  # 开启访问日志
+                )
 
 
 if __name__ == '__main__':

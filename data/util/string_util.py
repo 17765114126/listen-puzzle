@@ -1,5 +1,5 @@
 import json
-
+import re
 
 # 分析str字幕文件
 def parse_srt(srt_text):
@@ -83,3 +83,10 @@ def detect_prompt_language(text: str) -> str:
     else:
         # 默认返回英文（可根据需求调整）
         return '英文'
+
+
+def remove_think_tags(text):
+    # 正则匹配 <think>...</think> 标签及其中间内容（含换行符）
+    pattern = r'<think>.*?</think>'
+    # 使用 re.DOTALL 确保 . 匹配换行符，flags=re.DOTALL
+    return re.sub(pattern, '', text, flags=re.DOTALL)

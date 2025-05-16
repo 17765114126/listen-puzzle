@@ -378,12 +378,7 @@ def change_gpt_weights(gpt_path):
     # with open("weight.json", "w") as f:
     #     f.write(json.dumps(data))
 
-
-print("======================================")
-print(gpt_path)
 change_gpt_weights(gpt_path)
-
-import torch
 
 now_dir = os.getcwd()
 

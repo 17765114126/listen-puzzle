@@ -6,7 +6,6 @@ import config
 import requests
 from urllib.parse import urlencode
 from data import use_video_analyse
-import re
 from mutagen.mp4 import MP4
 
 
