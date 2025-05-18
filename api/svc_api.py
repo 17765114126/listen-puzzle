@@ -3,10 +3,10 @@ import soundfile as sf
 import shutil
 
 from data import dh_live
-from data.util import file_util, string_util
+from util import string_util
+from util import file_util
 import config
-from data.sovits_v4 import use_sovits_v4
-from api.Do import BaseReq
+from db.Do import BaseReq
 
 router = APIRouter()
 
@@ -69,6 +69,7 @@ async def save_timbre(req: BaseReq):
 # 语音克隆
 @router.post("/sovits_v4")
 async def tts_endpoint(req: BaseReq):
+    from data.sovits_v4 import use_sovits_v4
     # 获取字段，如果字段为空则返回None
     req_dict = req.dict()
     if req_dict.get("prompt_language", None) is None:

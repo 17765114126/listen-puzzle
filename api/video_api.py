@@ -1,8 +1,8 @@
 from fastapi.responses import FileResponse
 from data import use_ffmpeg, video_downloader, use_fast_whisper
-from data.util import file_util
+from util import file_util
 from fastapi import APIRouter
-from api.Do import BaseReq
+from db.Do import BaseReq
 from pathlib import Path
 import config
 

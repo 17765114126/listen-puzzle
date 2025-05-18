@@ -2,14 +2,7 @@ import os
 import subprocess
 import re
 import shutil
-
-
-def sanitize_title(title):
-    # Only keep numbers, letters, Chinese characters, and spaces
-    title = re.sub(r'[^\w\u4e00-\u9fff \d_-]', '', title)
-    # Replace multiple spaces with a single space
-    title = re.sub(r'\s+', ' ', title)
-    return title
+import ast
 
 
 # 获取文件名称(有后缀)
@@ -125,6 +118,64 @@ def check_folder(target_file):
     if not os.path.exists(target_file):
         return False
     return True
+
+
+def clean_upload_dir(clean_dir):
+    """清空上传目录"""
+    try:
+        if os.path.exists(clean_dir):
+            # 删除整个目录（包括所有子文件和子目录）
+            shutil.rmtree(clean_dir)
+        # 重新创建目录（保持目录存在）
+        os.makedirs(clean_dir, exist_ok=True)
+    except Exception as e:
+        raise RuntimeError(f"目录清理失败: {str(e)}")
+
+
+def load_config():
+    """读取配置文件到字典"""
+    config = {}
+    try:
+        with open('config.py', 'r', encoding='utf-8') as f:
+            tree = ast.parse(f.read())
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Assign):
+                    for target in node.targets:
+                        if isinstance(target, ast.Name):
+                            try:
+                                value = ast.literal_eval(node.value)
+                            except:
+                                value = None
+                            config[target.id] = value
+    except FileNotFoundError:
+        pass
+    return config
+
+
+def update_value(key: str, value):
+    """更新配置文件"""
+    try:
+        with open('config.py', 'r+', encoding='utf-8') as f:
+            content = f.read()
+
+            # 保留注释的替换逻辑
+            new_content = re.sub(
+                rf'^(\s*{key}\s*=\s*)(.*?)(\s*#.*)?$',
+                rf'\g<1>{repr(value)}\g<3>',
+                content,
+                flags=re.MULTILINE
+            )
+
+            # 如果没找到配置项则追加
+            # if new_content == content:
+            #     new_content += f"\n{key} = {repr(value)}\n"
+
+            f.seek(0)
+            f.write(new_content)
+            f.truncate()
+    except FileNotFoundError:
+        with open('config.py', 'w') as f:
+            f.write(f"{key} = {repr(value)}")
 
 
 def seconds_to_hms(seconds):

@@ -1,8 +1,9 @@
 from data import use_llm, use_ffmpeg, prompt_config, video_downloader
-from data.util import file_util, string_util
+from util import string_util
+from util import file_util
 import config
 from fastapi import APIRouter
-from api.Do import BaseReq
+from db.Do import BaseReq
 from mutagen.mp4 import MP4
 import logging
 router = APIRouter()

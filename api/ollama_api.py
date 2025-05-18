@@ -1,19 +1,53 @@
-from data.util.requests_util import get, post
+from util.requests_util import get, post
 import json
+from fastapi import APIRouter
+from db.Do import we_library, ChatHistoryTitle, ChatHistory
 
+router = APIRouter()
 host = "http://localhost:11434"
 
 
+@router.post("/chat_list")
+async def chat_list():
+    return we_library.fetch_all("SELECT * FROM chat_history_title", tuple([]))
+
+
+# 保存
+@router.post("/chat_title_save")
+async def chat_save(do: ChatHistoryTitle):
+    do.introduce = "文件1"
+    if do.id is None:
+        one = we_library.fetch_one(f"SELECT * FROM chat_history_title WHERE introduce=?;", (do.introduce,))
+        if one:
+            return "已存在文件名"
+    we_library.add_or_update(do, do.table_name)
+    return True
+
+
+# 保存
+@router.post("/chat_save")
+async def chat_save(do: ChatHistory):
+    we_library.add_or_update(do, do.table_name)
+    return True
+
+
+# 根据id查询
+@router.get("/chat_info")
+def chat_info(id: int):
+    return we_library.fetch_one(f"SELECT * FROM chat_history WHERE chat_history_title_id=?;", (id,))
+
+
+@router.post("/ollama_list")
 def ollama_list():
     """
     列出 列出本地可用的模型。
     """
-    # return ["Llama 3.1", "gemma2", "Qwen2.5"]
     models_data = get(host + "/api/tags")
     models_dict = json.loads(models_data.text)
     return [model['name'] for model in models_dict['models']]
 
 
+@router.post("/ollama_show")
 def ollama_show(ollama_model):
     """
     显示有关模型的信息，包括详细信息、模型文件、模板、参数、许可证、系统提示符。
@@ -21,6 +55,7 @@ def ollama_show(ollama_model):
     return post(host + "/api/show", params={"name": ollama_model})
 
 
+@router.post("/ollama_create")
 def ollama_create(ollama_model):
     """
     创建模型
@@ -42,6 +77,7 @@ def ollama_create(ollama_model):
     return post(host + "/api/create", params={"name": ollama_model, "modelfile": model_file})
 
 
+@router.post("/ollama_copy")
 def ollama_copy(ollama_model):
     """
     复制模型。使用现有模型中的另一个名称创建模型。
@@ -49,6 +85,7 @@ def ollama_copy(ollama_model):
     return post(host + "/api/copy", params={"source": ollama_model, "destination": "backup"})
 
 
+@router.post("/ollama_delete")
 def ollama_delete(ollama_model):
     """
     删除模型及其数据。
@@ -58,6 +95,7 @@ def ollama_delete(ollama_model):
     return f"模型{ollama_model}删除成功"
 
 
+@router.post("/ollama_pull")
 def ollama_pull(ollama_model):
     """
     拉取模型 从 ollama 库下载模型。已取消的拉取将从中断的位置恢复，多个调用将共享相同的下载进度。
@@ -71,6 +109,7 @@ def ollama_pull(ollama_model):
     return f"模型{ollama_model}拉取成功"
 
 
+@router.post("/ollama_push")
 def ollama_push(ollama_model):
     """
     推送 将模型上传到模型库。需要先注册 ollama.ai 并添加公钥。
@@ -82,6 +121,7 @@ def ollama_push(ollama_model):
     return post(host + "/api/push", params={"name": ollama_model})
 
 
+@router.post("/ollama_embed")
 def ollama_embed(ollama_model):
     """
     嵌入 从模型生成嵌入
@@ -89,6 +129,7 @@ def ollama_embed(ollama_model):
     return post(host + "/api/embed", params={"model": ollama_model, "input": "Why is the sky blue?"})
 
 
+@router.post("/ollama_ps")
 def ollama_ps():
     """
     列出正在运行的模型
@@ -96,6 +137,7 @@ def ollama_ps():
     return get(host + "/api/ps")
 
 
+@router.post("/单次生成回答")
 def ollama_generate(ollama_model, prompt, stream=None, keep_alive=5, images=None):
     """
     单次生成回答
@@ -124,6 +166,7 @@ def ollama_generate(ollama_model, prompt, stream=None, keep_alive=5, images=None
     return data['response']
 
 
+@router.post("/ollama_chat")
 def ollama_chat(ollama_model, messages, stream=False, tools=None, keep_alive=5):
     """
     聊天 从模型生成响应

@@ -1,10 +1,10 @@
 import os, re, sys, json, subprocess
-from data.util.file_util import get_download_folder, get_file_name, get_file_suffix, get_file_name_no_suffix, \
+from util.file_util import get_download_folder, get_file_name, get_file_suffix, get_file_name_no_suffix, \
     del_file
 from data import video_downloader
 import config
 from pathlib import Path
-from data.util import file_util
+from util import file_util
 
 
 def process_video(input_path, output_path=None,
@@ -638,9 +638,21 @@ def get_video_duration(input_path):
 
 # cmd执行ffmpeg命令
 def run_ffmpeg_cmd(cmd):
+    FFMPEG_BIN = "ffmpeg"
+
+    # # ffmpeg
+    # if sys.platform == 'win32':
+    #     os.environ['PATH'] = ROOT_DIR + f';{ROOT_DIR}/ffmpeg;' + os.environ['PATH']
+    #     if Path(ROOT_DIR + '/ffmpeg/ffmpeg.exe').is_file():
+    #         FFMPEG_BIN = ROOT_DIR + '/ffmpeg/ffmpeg.exe'
+    # else:
+    #     os.environ['PATH'] = ROOT_DIR + f':{ROOT_DIR}/ffmpeg:' + os.environ['PATH']
+    #     if Path(ROOT_DIR + '/ffmpeg/ffmpeg').is_file():
+    #         FFMPEG_BIN = ROOT_DIR + '/ffmpeg/ffmpeg'
+
     try:
         command = [
-            config.FFMPEG_BIN
+            FFMPEG_BIN
         ]
         # 检查ffmpeg是否支持CUDA
         # if check_cuda_support():
@@ -675,9 +687,19 @@ def check_cuda_support():
 
 # cmd执行ffprobe命令
 def run_ffprobe_cmd(cmd):
+    FFPROBE_BIN = "ffprobe"
+    # # ffmpeg
+    # if sys.platform == 'win32':
+    #     os.environ['PATH'] = ROOT_DIR + f';{ROOT_DIR}/ffmpeg;' + os.environ['PATH']
+    #     if Path(ROOT_DIR + '/ffmpeg/ffprobe.exe').is_file():
+    #         FFPROBE_BIN = ROOT_DIR + '/ffmpeg/ffprobe.exe'
+    # else:
+    #     os.environ['PATH'] = ROOT_DIR + f':{ROOT_DIR}/ffmpeg:' + os.environ['PATH']
+    #     if Path(ROOT_DIR + '/ffmpeg/ffprobe').is_file():
+    #         FFPROBE_BIN = ROOT_DIR + '/ffmpeg/ffprobe'
     try:
         command = [
-            config.FFPROBE_BIN
+            FFPROBE_BIN
         ]
         command.extend(cmd)
         result = subprocess.run(command,

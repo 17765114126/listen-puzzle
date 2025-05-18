@@ -8,8 +8,8 @@ import config
 
 def _generate_response(
         prompt: str,
-        provider: str = config.provider,
-        api_key: Optional[str] = config.api_key,
+        provider: str = config.llm_model,
+        api_key: Optional[str] = config.llm_key,
         model_name: Optional[str] = config.model_name,
         base_url: Optional[str] = None,
         api_version: Optional[str] = None,

@@ -1,7 +1,7 @@
 import os
 import random
 import yt_dlp
-from data.util.file_util import sanitize_title
+from util.string_util import sanitize_title
 import config
 import requests
 from urllib.parse import urlencode
@@ -84,7 +84,7 @@ def search_videos_pexels(
     """
     video_orientation = "landscape"
     video_width, video_height = 1920, 1080
-    api_key = (config.pexels_api_keys)
+    api_key = (config.video_api_keys)
     headers = {
         "Authorization": api_key,
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
@@ -133,7 +133,7 @@ def search_videos_pixabay(
         minimum_duration: int
 ):
     video_width, video_height = 1920, 1080
-    api_key = config.pixabay_api_keys
+    api_key = config.video_api_keys
     # Build URL
     params = {
         "q": search_term,

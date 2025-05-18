@@ -1,6 +1,15 @@
 import json
 import re
 
+
+def sanitize_title(title):
+    # Only keep numbers, letters, Chinese characters, and spaces
+    title = re.sub(r'[^\w\u4e00-\u9fff \d_-]', '', title)
+    # Replace multiple spaces with a single space
+    title = re.sub(r'\s+', ' ', title)
+    return title
+
+
 # 分析str字幕文件
 def parse_srt(srt_text):
     subs = []

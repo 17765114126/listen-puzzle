@@ -1,10 +1,31 @@
 from pydantic import BaseModel
+from db import SQLiteDB
+import os
+from typing import Optional
+
+we_library = SQLiteDB.SQLiteDB(os.path.join('db', 'we_library.db'))
 
 
 # pydantic基类
 class BaseReq(BaseModel):
     class Config:
         extra = 'allow'  # 允许额外的字段
+
+
+class ChatHistoryTitle(BaseModel):
+    table_name: str = "chat_history_title"
+    id: Optional[int] = None
+    introduce: Optional[str] = None
+    user_id: Optional[int] = None
+
+
+class ChatHistory(BaseModel):
+    table_name: str = "chat_history"
+    id: Optional[int] = None
+    thumb_img: Optional[str] = None
+    content: Optional[str] = None
+    chat_history_title_id: Optional[int] = None
+    role_type: Optional[str] = None
 
 
 def test_nltk():
