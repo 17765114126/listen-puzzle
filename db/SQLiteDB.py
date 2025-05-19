@@ -19,7 +19,7 @@ class SQLiteDB:
                 self.connection.close()
 
     def execute_query(self, query, params=None):
-        """ 执行SQL语句（非查询）并提交更改 """
+        """执行SQL语句并返回 lastrowid（如果是INSERT）"""
         with self.connect() as conn:
             cursor = conn.cursor()
             if params:
@@ -27,6 +27,7 @@ class SQLiteDB:
             else:
                 cursor.execute(query)
             conn.commit()
+            return cursor.lastrowid  # 返回插入后的 rowid
 
     def fetch_count(self, query, params=None):
         # 将 * 替换为 COUNT(*)
@@ -120,9 +121,12 @@ class SQLiteDB:
     def add_or_update(self, req, tal_name):
         if req.id:
             sql_query, params = self.update_sql(req, tal_name)
+            self.execute_query(sql_query, params)
+            return req.id  # 更新返回现有 id
         else:
             sql_query, params = self.insert_sql(req, tal_name)
-        self.execute_query(sql_query, params)
+            new_id = self.execute_query(sql_query, params)  # 获取新 id
+            return new_id  # 插入返回新 id
 
     def page(self, req, tal_name):
         base_query = f"SELECT * FROM {tal_name}"

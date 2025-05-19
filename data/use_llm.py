@@ -7,7 +7,7 @@ import config
 
 
 def _generate_response(
-        prompt: str,
+        messages: str,
         provider: str = config.llm_model,
         api_key: Optional[str] = config.llm_key,
         model_name: Optional[str] = config.model_name,
@@ -35,26 +35,26 @@ def _generate_response(
     try:
         # 各供应商处理逻辑分流
         if provider == "g4f":
-            return _handle_g4f(prompt, model_name)
+            return _handle_g4f(messages, model_name)
 
         elif provider == "qwen":
-            return _handle_qwen(prompt, api_key, model_name)
+            return _handle_qwen(messages, api_key, model_name)
 
-        elif provider == "gemini":
-            return _handle_gemini(prompt, api_key, model_name)
+        # elif provider == "gemini":
+        #     return _handle_gemini(messages, api_key, model_name)
 
         elif provider == "cloudflare":
-            return _handle_cloudflare(prompt, api_key, account_id, model_name)
+            return _handle_cloudflare(messages, api_key, account_id, model_name)
 
         elif provider == "ernie":
-            return _handle_ernie(prompt, api_key, secret_key, base_url)
+            return _handle_ernie(messages, api_key, secret_key, base_url)
 
         elif provider == "azure":
-            return _handle_azure(prompt, api_key, model_name, base_url, api_version)
+            return _handle_azure(messages, api_key, model_name, base_url, api_version)
 
         elif provider in ["openai", "moonshot", "ollama", "deepseek", "oneapi"]:
             return _handle_openai_compatible(
-                prompt=prompt,
+                messages=messages,
                 provider=provider,
                 api_key=api_key,
                 model_name=model_name,
@@ -68,24 +68,24 @@ def _generate_response(
         return f"错误: {str(e)}"
 
 
-def _handle_g4f(prompt: str, model_name: Optional[str]) -> str:
+def _handle_g4f(messages: str, model_name: Optional[str]) -> str:
     """处理g4f免费模型请求"""
     model = model_name or "gpt-3.5-turbo-16k-0613"
     response = g4f.ChatCompletion.create(
         model=model,
-        messages=[{"role": "user", "content": prompt}],
+        messages=messages,
     )
     return response.replace("\n", "")
 
 
-def _handle_qwen(prompt: str, api_key: str, model_name: str) -> str:
+def _handle_qwen(messages: str, api_key: str, model_name: str) -> str:
     """处理阿里云通义千问请求"""
     import dashscope
 
     dashscope.api_key = api_key
     response = dashscope.Generation.call(
         model=model_name,
-        messages=[{"role": "user", "content": prompt}]
+        messages=messages
     )
 
     if response.status_code != 200:
@@ -103,18 +103,18 @@ def _handle_gemini(prompt: str, api_key: str, model_name: str) -> str:
     return response.candidates[0].content.parts[0].text
 
 
-def _handle_cloudflare(prompt: str, api_key: str, account_id: str, model_name: str) -> str:
+def _handle_cloudflare(messages: str, api_key: str, account_id: str, model_name: str) -> str:
     """处理Cloudflare Workers AI请求"""
     url = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/{model_name}"
     response = requests.post(
         url,
         headers={"Authorization": f"Bearer {api_key}"},
-        json={"messages": [{"role": "user", "content": prompt}]}
+        json={"messages": messages}
     )
     return response.json()["result"]["response"]
 
 
-def _handle_ernie(prompt: str, api_key: str, secret_key: str, base_url: str) -> str:
+def _handle_ernie(messages: str, api_key: str, secret_key: str, base_url: str) -> str:
     """处理百度文心一言请求"""
     # 获取访问令牌
     token_response = requests.post(
@@ -126,14 +126,14 @@ def _handle_ernie(prompt: str, api_key: str, secret_key: str, base_url: str) -> 
     # 生成响应
     response = requests.post(
         f"{base_url}?access_token={token}",
-        json={"messages": [{"role": "user", "content": prompt}]},
+        json={"messages": messages},
         headers={"Content-Type": "application/json"}
     )
     return response.json().get("result", "")
 
 
 def _handle_azure(
-        prompt: str,
+        messages: str,
         api_key: str,
         model_name: str,
         base_url: str,
@@ -147,13 +147,13 @@ def _handle_azure(
     )
     response = client.chat.completions.create(
         model=model_name,
-        messages=[{"role": "user", "content": prompt}]
+        messages=messages
     )
     return response.choices[0].message.content
 
 
 def _handle_openai_compatible(
-        prompt: str,
+        messages: str,
         provider: str,
         api_key: str,
         model_name: Optional[str],
@@ -187,7 +187,7 @@ def _handle_openai_compatible(
     client = OpenAI(api_key=api_key, base_url=base_url)
     response = client.chat.completions.create(
         model=model_name,
-        messages=[{"role": "user", "content": prompt}]
+        messages=messages
     )
     return response.choices[0].message.content
 
@@ -201,7 +201,7 @@ if __name__ == "__main__":
     - 'moonshot'  : 需要api_key和model_name，默认API地址https://api.moonshot.cn/v1
     - 'ollama'    : 需要model_name，默认本地地址http://localhost:11434/v1
     - 'qwen'      : 需要api_key和model_name，需安装dashscope包
-    - 'gemini'    : 需要api_key和model_name，需安装google-generativeai包
+                        - 'gemini'    : 需要api_key和model_name，需安装google-generativeai包
     - 'cloudflare': 需要api_key, account_id和model_name
     - 'ernie'     : 需要api_key, secret_key和base_url
     - 'deepseek'  : 需要api_key和model_name 模型名称：deepseek-chat  deepseek-reasoner
@@ -221,4 +221,5 @@ if __name__ == "__main__":
     都是你的模样
     """
     print("=========================================================")
-    print(_generate_response(keywords_prompt))
+    messages = [{"role": "user", "content": keywords_prompt}]
+    print(_generate_response(messages))

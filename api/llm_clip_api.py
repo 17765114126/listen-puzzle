@@ -11,7 +11,6 @@ router = APIRouter()
 
 @router.post("/get_source_videos")
 def get_source_videos():
-    logging.info("------------------------------------------")
     # 获取已存在本地素材
     save_dir = config.ROOT_DIR_WIN / config.source_videos_dir
     folder_file_names = file_util.get_folder_file_name(save_dir)
@@ -53,7 +52,8 @@ def del_source_videos():
 def llm_get_source(req: BaseReq):
     print("=================================llm获取搜索关键词=================================")
     keywords_prompt = prompt_config.keywords_prompt(req.creative)
-    keywords_resp = use_llm._generate_response(keywords_prompt)
+    messages = [{"role": "user", "content": keywords_prompt}]
+    keywords_resp = use_llm._generate_response(messages)
     keywords_resp = string_util.remove_think_tags(keywords_resp)
     keywords = keywords_resp.split(",")
     print(keywords)
@@ -83,7 +83,8 @@ def videos_transitions(req: BaseReq):
     print("=================================llm获取剪辑视频提示词=================================")
     clip_prompt = prompt_config.clip_prompt(req.creative, source_infos, duration)
     print(clip_prompt)
-    clip_resp = use_llm._generate_response(clip_prompt)
+    messages = [{"role": "user", "content": clip_prompt}]
+    clip_resp = use_llm._generate_response(messages)
     keywords_resp = string_util.remove_think_tags(clip_resp)
     print("=================================根据llm返回视频信息进行剪辑=================================")
     print(keywords_resp)
