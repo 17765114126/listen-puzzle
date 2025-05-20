@@ -8,7 +8,7 @@ from api.svc_api import router as api_interface
 from api.tool_api import router as api_tool
 from api.video_api import router as video_api
 from api.llm_clip_api import router as llm_clip_api
-from api.ollama_api import router as ollama_api
+from api.digital_human import router as digital_human
 from util import file_util
 
 app = FastAPI()
@@ -20,7 +20,7 @@ app.include_router(api_interface)
 app.include_router(api_tool)
 app.include_router(video_api)
 app.include_router(llm_clip_api)
-app.include_router(ollama_api)
+app.include_router(digital_human)
 
 # 配置静态文件服务
 os.makedirs(config.UPLOAD_DIR, exist_ok=True)

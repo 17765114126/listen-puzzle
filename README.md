@@ -46,3 +46,5 @@ python run_web.py
 ```
 ### 界面展示
 ![演示界面](static/interface.png)
+### 界面展示
+![演示界面](static/1747761297183.png)

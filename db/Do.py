@@ -20,6 +20,13 @@ class ChatHistory(BaseModel):
     user_id: Optional[int] = None
 
 
+class ChatRole(BaseModel):
+    table_name: str = "chat_role"
+    id: Optional[int] = None
+    role_name: Optional[str] = None
+    role_setting: Optional[str] = None
+
+
 def test_nltk():
     # 问题：语音克隆英文转换报错
     import nltk
