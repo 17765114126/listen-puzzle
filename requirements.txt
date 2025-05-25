@@ -29,3 +29,8 @@ opencc
 cn2an
 g2p_en
 wordsegment
+
+
+
+aiohttp_cors
+aiortc

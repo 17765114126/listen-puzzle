@@ -1,10 +1,10 @@
 import json
 from fastapi import APIRouter
+
 from db.Do import BaseReq, we_library, ChatHistory, ChatRole
 from data import use_llm
 
 router = APIRouter()
-host = "http://localhost:11434"
 
 
 @router.post("/chat_list")
@@ -29,6 +29,18 @@ def chat_info(id: int):
 @router.post("/chat")
 def chat(req: BaseReq):
     req_dict = req.dict()
+    messages = []
+    # 初始化角色设置
+    if req_dict.get("currentRole"):
+        role_info = we_library.fetch_one(f"SELECT id,role_name,role_setting FROM chat_role WHERE id=?;",
+                                         (req_dict.get("currentRole"),))
+        system_content = f"""
+        名称：{role_info.get("role_name")}
+        描述：{role_info.get("role_setting")}
+        """
+        system_messages = {"role": "system", "content": system_content}
+        messages.append(system_messages)
+
     prompt_messages = {"role": "user", "content": req.prompt}
     # 创建 ChatHistory 实例
     chat_history = ChatHistory(
@@ -36,20 +48,18 @@ def chat(req: BaseReq):
         introduce=req.prompt if req_dict.get("id") is None else None,
         id=req_dict.get("id")
     )
-    # 处理 content 字段
-    messages = []
     if req_dict.get("id"):
-        # 从数据库获取已有内容（假设 content 是 JSON 字符串）
         db_record = we_library.fetch_one("SELECT content FROM chat_history WHERE id=?", (req_dict["id"],))
         if db_record and db_record.get("content"):
             messages = json.loads(db_record["content"])
-
     # 添加新消息
     messages.append(prompt_messages)
     resp = use_llm._generate_response(messages)
 
     messages.append({"role": "assistant", "content": resp})
-    chat_history.content = json.dumps(messages, ensure_ascii=False)  # 序列化为字符串
+    if req_dict.get("currentRole"):
+        messages.pop(0)  # Remove the first element
+    chat_history.content = json.dumps(messages, ensure_ascii=False)
 
     # 保存到数据库
     new_id = we_library.add_or_update(chat_history, "chat_history")
@@ -62,7 +72,7 @@ def chat(req: BaseReq):
 @router.post("/chat_role")
 async def chat_role():
     # 获取角色列表
-    return we_library.fetch_all("SELECT id,role_name FROM chat_role", tuple([]))
+    return we_library.fetch_all("SELECT id,role_name,role_setting FROM chat_role", tuple([]))
 
 
 @router.post("/chat_role_save")
@@ -82,3 +92,15 @@ async def chat_role_del(id: int):
     # 删除角色
     we_library.execute_query("DELETE FROM chat_role WHERE id=?;", (id,))
     return True
+
+
+@router.post("/record")
+async def record(req: BaseReq):
+    # 录制控制
+    return None
+
+
+@router.post("/human")
+async def human(req: BaseReq):
+    # 向数字人发送聊天内容
+    return None

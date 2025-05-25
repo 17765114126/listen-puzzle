@@ -19,6 +19,7 @@ _root_path = Path(ROOT_DIR)
 
 api_host = 9527
 web_host = 9528
+listenport = 9529
 
 UPLOAD_DIR = "static/uploads/"
 source_videos_dir = "static/source_videos/"
@@ -30,4 +31,27 @@ llm_key = '1111'
 
 video_type = 'pexels'
 video_api_keys = 'AQanz5J1ptLpe8EzANVz4fFN9R0friFxQLnvzpTjTLFbwKjpR3eL6XLA'
-# video_api_keys = "AQanz5J1ptLpe8EzANVz4fFN9R0friFxQLnvzpTjTLFbwKjpR3eL6XLA"
+
+# 数字人设置
+human_model = "wav2lip"  # musetalk wav2lip ultralight
+fps = 50  # 50
+l = 10  # 10
+m = 8  # 8
+r = 10  # 10
+avatar_id = "wav2lip256_zf"  # avator_1
+batch_size = 16  # 16
+customvideo_config = ""  # custom action json
+tts = "edgetts"  # edgetts xtts gpt-sovits cosyvoice
+REF_FILE = "zh-CN-YunxiaNeural"  # zh-CN-YunxiaNeural
+REF_TEXT = None
+TTS_SERVER = "http://127.0.0.1:9880"  # http://localhost:9880
+transport = "webrtc"  # rtmp webrtc rtcpush
+push_url = "http://localhost:1985/rtc/v1/whip/?app=live&stream=livestream"  # rtmp://localhost/live/livestream
+max_session = 1  # multi session count
+
+sessionid = 330688
+customopt = []
+# W = ""
+# H = ""
+# parser.add_argument('--W', type=int, default=450, help="GUI width")
+# parser.add_argument('--H', type=int, default=450, help="GUI height")
