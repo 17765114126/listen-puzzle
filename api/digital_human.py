@@ -93,14 +93,14 @@ async def chat_role_del(id: int):
     we_library.execute_query("DELETE FROM chat_role WHERE id=?;", (id,))
     return True
 
-
-@router.post("/record")
-async def record(req: BaseReq):
-    # 录制控制
-    return None
-
-
-@router.post("/human")
-async def human(req: BaseReq):
-    # 向数字人发送聊天内容
-    return None
+#
+# @router.post("/record")
+# async def record(req: BaseReq):
+#     # 录制控制
+#     return None
+#
+#
+# @router.post("/human")
+# async def human(req: BaseReq):
+#     # 向数字人发送聊天内容
+#     return None

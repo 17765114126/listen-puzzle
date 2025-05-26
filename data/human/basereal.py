@@ -34,7 +34,8 @@ class BaseReal:
         if opt.tts == "edgetts":
             self.tts = EdgeTTS(opt, self)
         elif opt.tts == "gpt-sovits":
-            self.tts = SovitsTTS(opt, self)
+            # self.tts = SovitsTTS(opt, self)
+            self.tts = EdgeTTS(opt, self)
         elif opt.tts == "xtts":
             self.tts = XTTS(opt, self)
         elif opt.tts == "cosyvoice":
@@ -59,7 +60,10 @@ class BaseReal:
         self.custom_opt = {}
         self.__loadcustom()
 
-    def put_msg_txt(self, msg, eventpoint=None):
+    def put_msg_txt(self, msg,ref_audio_path,prompt_text, eventpoint=None):
+        if self.opt.tts == "gpt-sovits":
+            self.opt.REF_FILE = ref_audio_path
+            self.opt.REF_TEXT = prompt_text
         self.tts.put_msg_txt(msg, eventpoint)
 
     def put_audio_frame(self, audio_chunk, eventpoint=None):  # 16khz 20ms pcm

@@ -110,13 +110,12 @@ async def offer(request):
 
 async def human(request):
     params = await request.json()
-
     sessionid = params.get('sessionid', 0)
     if params.get('interrupt'):
         nerfreals[sessionid].flush_talk()
 
     # if params['type']=='echo':
-    nerfreals[sessionid].put_msg_txt(params['text'])
+    nerfreals[sessionid].put_msg_txt(params['text'],params["ref_audio_path"],params["prompt_text"])
     # elif params['type']=='chat':
     #     res=await asyncio.get_event_loop().run_in_executor(None, llm_response, params['text'],nerfreals[sessionid])
     # nerfreals[sessionid].put_msg_txt(res)
@@ -259,10 +258,10 @@ if __name__ == '__main__':
 
     parser.add_argument('--customvideo_config', type=str, default='', help="custom action json")
 
-    parser.add_argument('--tts', type=str, default='edgetts', help="tts service type")  # xtts gpt-sovits cosyvoice
+    parser.add_argument('--tts', type=str, default='gpt-sovits', help="tts service type")  # edgetts, xtts, gpt-sovits, cosyvoice
     parser.add_argument('--REF_FILE', type=str, default="zh-CN-YunxiaNeural")
     parser.add_argument('--REF_TEXT', type=str, default=None)
-    parser.add_argument('--TTS_SERVER', type=str, default='http://127.0.0.1:9880')  # http://localhost:9000
+    parser.add_argument('--TTS_SERVER', type=str, default='http://127.0.0.1:9527')  # http://localhost:9000
     # parser.add_argument('--CHARACTER', type=str, default='test')
     # parser.add_argument('--EMOTION', type=str, default='default')
 
@@ -273,9 +272,10 @@ if __name__ == '__main__':
                         default='http://localhost:1985/rtc/v1/whip/?app=live&stream=livestream')  # rtmp://localhost/live/livestream
 
     parser.add_argument('--max_session', type=int, default=1)  # multi session count
-    parser.add_argument('--listenport', type=int, default=9529, help="web listen port")
+    parser.add_argument('--listenport', type=int, default=config.listenport, help="web listen port")
 
     opt = parser.parse_args()
+
     # app.config.from_object(opt)
     # print(app.config)
     opt.customopt = []
