@@ -25,12 +25,12 @@ UPLOAD_DIR = "static/uploads/"
 source_videos_dir = "static/source_videos/"
 source_audios_dir = "static/source_timbre/"
 
-llm_model = 'ollama'
-model_name = 'gemma3:12b'
-llm_key = '1111'
+llm_model = 'deepseek'
+model_name = 'deepseek-chat'
+llm_key = '111'
 
 video_type = 'pexels'
-video_api_keys = 'AQanz5J1ptLpe8EzANVz4fFN9R0friFxQLnvzpTjTLFbwKjpR3eL6XLA'
+video_api_keys = '111'
 
 # 数字人设置
 human_model = "wav2lip"  # musetalk wav2lip ultralight

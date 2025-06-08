@@ -1,7 +1,9 @@
+import os, uvicorn
+os.environ['HF_ENDPOINT'] = "https://hf-mirror.com"
+os.environ['HF_HOME'] = 'D:/hf-model'
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-import os, uvicorn
 import logging
 import config
 from api.svc_api import router as api_interface
@@ -9,6 +11,7 @@ from api.tool_api import router as api_tool
 from api.video_api import router as video_api
 from api.llm_clip_api import router as llm_clip_api
 from api.digital_human import router as digital_human
+from api.video_generation_api import router as video_generation_api
 from util import file_util
 
 app = FastAPI()
@@ -21,6 +24,7 @@ app.include_router(api_tool)
 app.include_router(video_api)
 app.include_router(llm_clip_api)
 app.include_router(digital_human)
+app.include_router(video_generation_api)
 
 # 配置静态文件服务
 os.makedirs(config.UPLOAD_DIR, exist_ok=True)
@@ -42,9 +46,6 @@ app.add_middleware(
 # 访问地址：http://127.0.0.1:8686
 # 自动动生成交互式 API 文档，访问地址： http://127.0.0.1:8686/docs
 def run():
-    os.environ['HF_ENDPOINT'] = "https://hf-mirror.com/"
-    os.environ['HF_HOME'] = 'D:/hf-model'
-
     # 清除upload_dir
     file_util.clean_upload_dir(config.UPLOAD_DIR)
 

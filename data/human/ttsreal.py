@@ -1,13 +1,13 @@
 ###############################################################################
 #  Copyright (C) 2024 LiveTalking@lipku https://github.com/lipku/LiveTalking
 #  email: lipku@foxmail.com
-# 
+#
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at
-#  
+#
 #       http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,7 +40,8 @@ from threading import Thread, Event
 from enum import Enum
 
 from typing import TYPE_CHECKING
-
+from data.sovits_v4 import use_sovits_v4
+from util import string_util
 if TYPE_CHECKING:
     from data.human.basereal import BaseReal
 
@@ -138,20 +139,44 @@ class EdgeTTS(BaseTTS):
         return stream
 
     async def __main(self, voicename: str, text: str):
-        try:
-            communicate = edge_tts.Communicate(text, voicename)
 
-            # with open(OUTPUT_FILE, "wb") as file:
-            first = True
-            async for chunk in communicate.stream():
-                if first:
-                    first = False
-                if chunk["type"] == "audio" and self.state == State.RUNNING:
-                    # self.push_audio(chunk["data"])
-                    self.input_stream.write(chunk["data"])
-                    # file.write(chunk["data"])
-                elif chunk["type"] == "WordBoundary":
-                    pass
+        try:
+            if self.opt.tts == "gpt-sovits":
+                reffile = self.opt.REF_FILE
+                reftext = self.opt.REF_TEXT,
+                reftext = reftext[0]
+                prompt_language = string_util.detect_prompt_language(reftext)
+                text_language = string_util.detect_prompt_language(text)
+                opt_sr, audio_opt = use_sovits_v4.get_tts_wav(ref_wav_path=reffile, text=text, prompt_text=reftext,
+                                                              prompt_language=prompt_language,
+                                                              text_language=text_language)
+
+                with BytesIO() as temp_io:
+                    sf.write(temp_io, audio_opt, opt_sr, format='WAV', subtype='PCM_16')
+                    temp_io.seek(0)
+                    if self.state == State.RUNNING:
+                        # 写入主缓冲区
+                        self.input_stream.write(temp_io.read())
+                        self.input_stream.seek(0)  # 重置指针位置
+                        from datetime import datetime
+
+                        # 必须加上时间戳这句代码否则后续代码不起作用
+                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        logger.info(f"时间戳：{timestamp}")
+                        self.input_stream.seek(0)  # 再次重置指针
+            else:
+                communicate = edge_tts.Communicate(text, voicename)
+                # with open(OUTPUT_FILE, "wb") as file:
+                first = True
+                async for chunk in communicate.stream():
+                    if first:
+                        first = False
+                    if chunk["type"] == "audio" and self.state == State.RUNNING:
+                        # self.push_audio(chunk["data"])
+                        self.input_stream.write(chunk["data"])
+                        # file.write(chunk["data"])
+                    elif chunk["type"] == "WordBoundary":
+                        pass
         except Exception as e:
             logger.exception('edgetts')
 
@@ -260,12 +285,7 @@ class SovitsTTS(BaseTTS):
             'media_type': 'ogg',
             'streaming_mode': True
         }
-        # req["text"] = text
-        # req["text_language"] = language
-        # req["character"] = character
-        # req["emotion"] = emotion
-        # #req["stream_chunk_size"] = stream_chunk_size  # you can reduce it to get faster response, but degrade quality
-        # req["streaming_mode"] = True
+
         try:
             res = requests.post(
                 f"{server_url}/tts",

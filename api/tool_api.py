@@ -58,6 +58,24 @@ async def upload_source_video(file_stream: UploadFile = File(...)):
     }
 
 
+@router.post("/upload_img_file_stream")
+async def upload_img_file_stream(file_stream: UploadFile = File(...)):
+    # 生成唯一文件名
+    file_ext = file_stream.filename.split('.')[-1]
+    filename = f"{uuid.uuid4().hex}.{file_ext}"
+    file_path = os.path.join(config.UPLOAD_DIR, filename)
+
+    # 分块写入文件（适合大文件）
+    with open(file_path, "wb") as buffer:
+        while content := await file_stream.read(1024 * 1024):  # 每次读取1MB
+            buffer.write(content)
+    access_url_path = config.ROOT_DIR_WIN / config.UPLOAD_DIR / filename
+    return {
+        "webPath": f"{config.UPLOAD_DIR}{filename}",
+        "localPath": access_url_path
+    }
+
+
 @router.get("/loadLog")
 async def loadLog():
     return ""

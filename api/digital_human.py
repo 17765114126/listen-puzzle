@@ -35,8 +35,7 @@ def chat(req: BaseReq):
         role_info = we_library.fetch_one(f"SELECT id,role_name,role_setting FROM chat_role WHERE id=?;",
                                          (req_dict.get("currentRole"),))
         system_content = f"""
-        名称：{role_info.get("role_name")}
-        描述：{role_info.get("role_setting")}
+        名称：{role_info.get("role_name")}，描述：{role_info.get("role_setting")}
         """
         system_messages = {"role": "system", "content": system_content}
         messages.append(system_messages)
@@ -51,7 +50,7 @@ def chat(req: BaseReq):
     if req_dict.get("id"):
         db_record = we_library.fetch_one("SELECT content FROM chat_history WHERE id=?", (req_dict["id"],))
         if db_record and db_record.get("content"):
-            messages = json.loads(db_record["content"])
+            messages.extend(json.loads(db_record["content"]))
     # 添加新消息
     messages.append(prompt_messages)
     resp = use_llm._generate_response(messages)
