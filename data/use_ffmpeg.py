@@ -167,17 +167,16 @@ def set_video_cover(input_video, cover_image):
 
 
 # 获取指定秒的第一帧
-def extract_frame(input_video, time_ss):
-    output_image_path = get_download_folder() + get_file_name_no_suffix(input_video) + "(图).png"
-
+def extract_frame(input_video, time_ss,output_image_path):
     command = [
+        '-y',  # 覆盖输出文件而不询问
         '-i', input_video,  # 输入视频文件
         '-ss', time_ss,  # 指定开始时间（HH:MM:SS格式）
         '-vframes', '1',  # 只提取一帧
+        '-q:v', '2',  # 控制输出质量(2-31，越低越好)
         output_image_path  # 输出图像文件
     ]
     run_ffmpeg_cmd(command)
-    return "图片提取成功"
 
 
 # 获取指定时间段内每秒的第一帧

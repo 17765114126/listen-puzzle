@@ -32,14 +32,14 @@ async def upload_video(file_stream: UploadFile = File(...)):
     access_url_path = config.ROOT_DIR_WIN / config.UPLOAD_DIR / filename
     video_info = use_ffmpeg.get_info(access_url_path)
     return {
-        "videoWebPath": f"{config.UPLOAD_DIR}{filename}",
-        "videoPath": access_url_path,
+        "webPath": f"{config.UPLOAD_DIR}{filename}",
+        "localPath": access_url_path,
         "duration": video_info["duration"]
     }
 
 
-@router.post("/upload_source_file_stream")
-async def upload_source_video(file_stream: UploadFile = File(...)):
+@router.post("/upload_source_videos_stream")
+async def upload_source_videos_stream(file_stream: UploadFile = File(...)):
     # 生成唯一文件名
     file_ext = file_stream.filename.split('.')[-1]
     filename = f"{uuid.uuid4().hex}.{file_ext}"
@@ -52,13 +52,13 @@ async def upload_source_video(file_stream: UploadFile = File(...)):
     access_url_path = config.ROOT_DIR_WIN / config.source_videos_dir / filename
     video_info = use_ffmpeg.get_info(access_url_path)
     return {
-        "videoWebPath": f"{config.source_videos_dir}{filename}",
-        "videoPath": access_url_path,
+        "webPath": f"{config.source_videos_dir}{filename}",
+        "localPath": access_url_path,
         "duration": video_info["duration"]
     }
 
 
-@router.post("/upload_img_file_stream")
+@router.post("/upload_all_file_stream")
 async def upload_img_file_stream(file_stream: UploadFile = File(...)):
     # 生成唯一文件名
     file_ext = file_stream.filename.split('.')[-1]

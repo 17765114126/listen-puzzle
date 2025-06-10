@@ -1,9 +1,9 @@
-from fastapi.responses import FileResponse
 from data import use_ffmpeg, video_downloader, use_fast_whisper
 from util import file_util
 from fastapi import APIRouter
 from db.Do import BaseReq
 from pathlib import Path
+import time
 import config
 
 router = APIRouter()
@@ -64,8 +64,15 @@ async def process_video(req: BaseReq):
 # 提取图片
 @router.post("/extract_frame")
 async def extract_frame(req: BaseReq):
-    output_path = use_ffmpeg.extract_frame(req.video_input, req.time_ss)
-    return FileResponse(output_path, filename="extracted_frame.jpg")
+    # 生成唯一文件名
+    timestamp = int(time.time())
+    filename = f"extracted_frame_{timestamp}.png"
+    access_url_path = config.ROOT_DIR_WIN / config.UPLOAD_DIR / filename
+    use_ffmpeg.extract_frame(req.video_input, req.time_ss, access_url_path)
+    return {
+        "webPath": f"{config.UPLOAD_DIR}{filename}",
+        "localPath": access_url_path,
+    }
 
 
 # # 设置封面图
@@ -91,12 +98,14 @@ async def get_audio(req: BaseReq):
 # 添加音频到视频
 @router.post("/add_audio_to_video")
 async def add_audio_to_video(req: BaseReq):
-    output_dir = config.ROOT_DIR_WIN / config.UPLOAD_DIR / 'video_with_audio.mp4'
-
-    output_path = use_ffmpeg.add_audio_to_video(req.video_path, req.audio_path, output_dir)
+    # 生成唯一文件名
+    timestamp = int(time.time())
+    filename = f"video_with_audio_{timestamp}.mp4"
+    output_dir = config.ROOT_DIR_WIN / config.UPLOAD_DIR / filename
+    use_ffmpeg.add_audio_to_video(req.video_path, req.audio_path, output_dir)
     return {
-        "videoPath": f'{config.UPLOAD_DIR}video_with_audio.mp3',
-        "videoWebPath": f"{output_dir}"
+        "webPath": f'{config.UPLOAD_DIR}{filename}',
+        "localPath": f"{output_dir}"
     }
 
 
