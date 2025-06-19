@@ -1,36 +1,10 @@
 import os, sys, json, subprocess, shutil
 from pathlib import Path
 from util.file_util import get_download_folder, get_file_name, get_file_suffix, get_file_name_no_suffix, del_file
-from util import time_util, string_util, ffmpeg_util
+from util import time_util, string_util, ffmpeg_util, file_util
 import logging as logger
 import config
 import time
-
-#
-# # 获取视频信息
-# def get_info(video_path):
-#     command = [
-#         '-v', 'quiet',  # 设置为安静模式，不打印任何信息到控制台
-#         '-print_format', 'json',  # 输出格式设置为JSON
-#         '-show_format',  # 显示容器格式信息
-#         '-show_streams',  # 显示所有流的信息
-#         video_path
-#     ]
-#     # 将结果从字符串转换成JSON对象
-#     info = json.loads(run_ffprobe_cmd(command).stdout)
-#     # 获取格式信息
-#     format = info.get('format', {})
-#     filename = format.get('filename')
-#     raw_duration = float(format.get('duration', 0))
-#     # overall_bitrate = format_info.get('bit_rate')
-#     # 转换时长格式
-#     try:
-#         duration = time_util.seconds_to_hms(raw_duration)
-#     except (ValueError, TypeError):
-#         duration = "00:00:00"  # 异常时返回默认值
-#     return {"filename": get_file_name(filename),
-#             "duration": f"{duration}",
-#             "format": format}
 
 
 def get_video_info(input_path):
@@ -579,8 +553,7 @@ def compress_video_h265(
     - gpu_accelerator: 强制指定加速类型(可选: nvidia, amd, qsv, videotoolbox)
     """
     input_path = Path(input_path)
-    if not output_path:
-        output_path = input_path.parent / f"{input_path.stem}_h256.mp4"
+    output_path = input_path.parent / f"{input_path.stem}_h256.mp4"
     # 获取原始视频信息
     original_info = get_video_info(input_path)
     original_size = input_path.stat().st_size
@@ -613,11 +586,13 @@ def compress_video_h265(
             compression_ratio = compressed_size / original_size
             logger.info(f"压缩成功! 原始大小: {original_size / (1024 * 1024):.2f}MB -> "
                         f"压缩后: {compressed_size / (1024 * 1024):.2f}MB (比例: {compression_ratio:.2%})")
-            # # 如果压缩后文件反而变大
-            # if compression_ratio >= 1.0:
-            #     logger.warning("压缩后文件反而变大! 将删除压缩文件")
-            #     output_path.unlink()
-            #     return None
+            # 如果压缩后文件反而变大
+            if compression_ratio >= 1.0:
+                logger.warning("压缩后文件反而变大! 将删除压缩文件")
+                output_path.unlink()
+                output_path = input_path.parent / f"{input_path.stem}_y_h256.mp4"
+                file_util.rename_file(input_path,output_path)
+                return None
             # elif compression_ratio > 0.95:
             #     logger.warning("压缩效果不佳，文件大小几乎未减少")
             return output_path
@@ -676,10 +651,10 @@ def batch_compress_videos(input_dir, backup_dir, crf=20, max_bitrate='8000k', sk
         # 检查是否需要休息
         current_time = time.time()
         working_duration = current_time - last_break_time
-        if working_duration >= 1800:  # 30分钟（1800秒）
+        if working_duration >= 30 * 60:  # 30分钟
             logger.info(f"\n{'=' * 50}")
-            logger.info(f"已连续工作 {working_duration / 60:.1f} 分钟，开始休息30分钟...")
-            time.sleep(1800)  # 30分钟（1800秒）
+            logger.info(f"已连续工作 {working_duration / 60:.1f} 分钟，开始休息15分钟...")
+            time.sleep(15 * 60)  # 15分钟
             logger.info("休息结束，继续处理...")
             last_break_time = time.time()  # 更新上次休息结束时间
 
@@ -734,8 +709,6 @@ def batch_compress_videos(input_dir, backup_dir, crf=20, max_bitrate='8000k', sk
 
 def run_ffmpeg_cmd(cmd):
     # cmd执行ffmpeg命令
-    FFMPEG_BIN = "ffmpeg"
-
     # # ffmpeg
     # if sys.platform == 'win32':
     #     os.environ['PATH'] = ROOT_DIR + f';{ROOT_DIR}/ffmpeg;' + os.environ['PATH']
@@ -745,18 +718,15 @@ def run_ffmpeg_cmd(cmd):
     #     os.environ['PATH'] = ROOT_DIR + f':{ROOT_DIR}/ffmpeg:' + os.environ['PATH']
     #     if Path(ROOT_DIR + '/ffmpeg/ffmpeg').is_file():
     #         FFMPEG_BIN = ROOT_DIR + '/ffmpeg/ffmpeg'
-
     try:
         command = [
-            FFMPEG_BIN
+            "ffmpeg"
         ]
         # 检查ffmpeg是否支持CUDA
         # if ffmpeg_util.check_cuda_support():
         #     command.extend(['-hwaccel', 'cuda'])
         command.extend(cmd)
         print(f"ffmpeg运行命令：{command}")
-        # result = subprocess.run(command, check=True, stderr=subprocess.PIPE,
-        #                         text=True, encoding='utf-8', errors='ignore')
         result = subprocess.run(command,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT,
@@ -773,41 +743,6 @@ def run_ffmpeg_cmd(cmd):
         print(f"Output: {e.output}")
 
 
-#
-# # cmd执行ffprobe命令
-# def run_ffprobe_cmd(cmd):
-#     FFPROBE_BIN = "ffprobe"
-#     # # ffmpeg
-#     # if sys.platform == 'win32':
-#     #     os.environ['PATH'] = ROOT_DIR + f';{ROOT_DIR}/ffmpeg;' + os.environ['PATH']
-#     #     if Path(ROOT_DIR + '/ffmpeg/ffprobe.exe').is_file():
-#     #         FFPROBE_BIN = ROOT_DIR + '/ffmpeg/ffprobe.exe'
-#     # else:
-#     #     os.environ['PATH'] = ROOT_DIR + f':{ROOT_DIR}/ffmpeg:' + os.environ['PATH']
-#     #     if Path(ROOT_DIR + '/ffmpeg/ffprobe').is_file():
-#     #         FFPROBE_BIN = ROOT_DIR + '/ffmpeg/ffprobe'
-#     try:
-#         command = [
-#             FFPROBE_BIN
-#         ]
-#         command.extend(cmd)
-#         result = subprocess.run(command,
-#                                 stdout=subprocess.PIPE,
-#                                 stderr=subprocess.STDOUT,
-#                                 text=True,
-#                                 encoding="utf-8",
-#                                 check=True,
-#                                 creationflags=0 if sys.platform != 'win32' else subprocess.CREATE_NO_WINDOW
-#                                 )
-#         print(result)
-#         return result
-#     except subprocess.CalledProcessError as e:
-#         print("An error occurred while running the command.")
-#         print(f"Command: {e.cmd}")
-#         print(f"Return code: {e.returncode}")
-#         print(f"Output: {e.output}")
-
-
 if __name__ == '__main__':
     import log_config
 
@@ -816,7 +751,7 @@ if __name__ == '__main__':
 
     # 总大小963GB
     # SOURCE_FOLDER = "G:\\Walloaoer\\A\\日"
-    SOURCE_FOLDER = "G:\\Walloaoer\\动漫\\IP"
+    SOURCE_FOLDER = "G:\\Walloaoer\\动漫\\s or s"
     # 备份文件夹
     BACKUP_FOLDER = "G:\\Walloaoer\\beifen"
     # 执行批量压缩

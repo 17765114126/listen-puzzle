@@ -5,6 +5,12 @@ import shutil
 import ast
 
 
+def format_windows_path(path):
+    """安全格式化 Windows 路径"""
+    # 替换错误转义字符 + 标准化路径分隔符
+    return os.path.normpath(path.replace('\\', '/')).replace('\\', '/')
+
+
 # 获取文件名称(有后缀)
 def get_file_name(file_path):
     return os.path.basename(file_path)
@@ -18,6 +24,11 @@ def get_file_name_no_suffix(file_path):
 # 获取文件后缀
 def get_file_suffix(file_path):
     return os.path.splitext(os.path.basename(file_path))[1]
+
+
+def rename_file(old_path, new_path):
+    # 修改文件名称
+    os.rename(old_path, new_path)
 
 
 # 文件夹添加文件

@@ -1,4 +1,4 @@
-# listen-puzzle
+# synthetix
 
 ### 介绍
 

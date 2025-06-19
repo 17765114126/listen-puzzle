@@ -2,13 +2,13 @@ import config
 from fastapi import APIRouter
 from db.Do import BaseReq
 import cv2
-from data.frame_pack import frame_pack_f1
 
 router = APIRouter()
 
 
 @router.post("/frame_pack_generate")
 async def generate_endpoint(req: BaseReq):
+    from data.frame_pack import frame_pack_f1
 
     req_dict = req.dict()
     # 读取图像为numpy数组

@@ -1,10 +1,11 @@
 from data import use_ffmpeg, video_downloader, use_fast_whisper
-from util import time_util
+from util import time_util, file_util
 from fastapi import APIRouter
 from db.Do import BaseReq
 from pathlib import Path
 import time
 import config
+import logging as logger
 
 router = APIRouter()
 
@@ -134,3 +135,17 @@ async def video_add_subtitle(req: BaseReq):
         "videoPath": access_url_path,
         "duration": video_info["duration_hms"]
     }
+
+
+@router.post("/start_compression")
+def start_compression(req: BaseReq):
+    # 总大小963GB
+    # 执行批量压缩
+    logger.info("启动批量视频压缩任务")
+    use_ffmpeg.batch_compress_videos(
+        input_dir=file_util.format_windows_path(req.input_dir),
+        backup_dir=file_util.format_windows_path(req.backup_dir),
+        crf=req.crf,
+        max_bitrate=req.max_bitrate
+    )
+    return True
