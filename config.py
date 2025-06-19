@@ -17,6 +17,8 @@ ROOT_DIR_WIN = Path(__file__).parent.resolve()
 ROOT_DIR = _get_executable_path()
 _root_path = Path(ROOT_DIR)
 
+is_use_frame_pack = bool(False)
+
 api_host = 9527
 web_host = 9528
 listenport = 9529
@@ -31,6 +33,7 @@ llm_key = '111'
 
 video_type = 'pexels'
 video_api_keys = '111'
+
 
 # 数字人设置
 human_model = "wav2lip"  # musetalk wav2lip ultralight
@@ -51,7 +54,3 @@ max_session = 1  # multi session count
 
 sessionid = 330688
 customopt = []
-# W = ""
-# H = ""
-# parser.add_argument('--W', type=int, default=450, help="GUI width")
-# parser.add_argument('--H', type=int, default=450, help="GUI height")

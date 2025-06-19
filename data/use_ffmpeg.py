@@ -1,10 +1,89 @@
-import os, re, sys, json, subprocess
-from util.file_util import get_download_folder, get_file_name, get_file_suffix, get_file_name_no_suffix, \
-    del_file
-from data import video_downloader
-import config
+import os, sys, json, subprocess, shutil
 from pathlib import Path
-from util import file_util
+from util.file_util import get_download_folder, get_file_name, get_file_suffix, get_file_name_no_suffix, del_file
+from util import time_util, string_util, ffmpeg_util
+import logging as logger
+import config
+import time
+
+#
+# # 获取视频信息
+# def get_info(video_path):
+#     command = [
+#         '-v', 'quiet',  # 设置为安静模式，不打印任何信息到控制台
+#         '-print_format', 'json',  # 输出格式设置为JSON
+#         '-show_format',  # 显示容器格式信息
+#         '-show_streams',  # 显示所有流的信息
+#         video_path
+#     ]
+#     # 将结果从字符串转换成JSON对象
+#     info = json.loads(run_ffprobe_cmd(command).stdout)
+#     # 获取格式信息
+#     format = info.get('format', {})
+#     filename = format.get('filename')
+#     raw_duration = float(format.get('duration', 0))
+#     # overall_bitrate = format_info.get('bit_rate')
+#     # 转换时长格式
+#     try:
+#         duration = time_util.seconds_to_hms(raw_duration)
+#     except (ValueError, TypeError):
+#         duration = "00:00:00"  # 异常时返回默认值
+#     return {"filename": get_file_name(filename),
+#             "duration": f"{duration}",
+#             "format": format}
+
+
+def get_video_info(input_path):
+    """获取视频详细信息（编码、比特率、时长等）"""
+    try:
+        cmd = [
+            'ffprobe',
+            '-v', 'error',
+            '-select_streams', 'v:0',
+            '-show_entries', 'stream=codec_name,bit_rate,width,height,nb_frames',
+            '-show_entries', 'format=duration,size,bit_rate',
+            '-of', 'json',
+            str(input_path)
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        info = json.loads(result.stdout)
+        # 提取视频信息
+        stream_info = info['streams'][0] if 'streams' in info and len(info['streams']) > 0 else {}
+        format_info = info['format'] if 'format' in info else {}
+        duration = float(format_info.get('duration', 0))
+        duration_hms = time_util.seconds_to_hms(duration)
+        video_info = {
+            'file_name': get_file_name(input_path),
+            'codec': stream_info.get('codec_name', 'unknown'),
+            'width': int(stream_info.get('width', 0)),
+            'height': int(stream_info.get('height', 0)),
+            'duration': duration,
+            'duration_hms': duration_hms,
+            'file_size': int(format_info.get('size', 0)),  # 文件大小（字节）
+            'video_bitrate': int(stream_info.get('bit_rate', 0)) if 'bit_rate' in stream_info else 0,
+            'total_bitrate': int(format_info.get('bit_rate', 0)) if 'bit_rate' in format_info else 0,
+            'frame_count': int(stream_info.get('nb_frames', 0))
+        }
+        # 计算实际比特率 (优先使用视频流比特率)
+        if video_info['video_bitrate'] > 0:
+            video_info['effective_bitrate'] = video_info['video_bitrate']
+        else:
+            video_info['effective_bitrate'] = video_info['total_bitrate']
+        # 计算帧率
+        if video_info['frame_count'] > 0 and video_info['duration'] > 0:
+            video_info['fps'] = round(video_info['frame_count'] / video_info['duration'], 2)
+        else:
+            video_info['fps'] = 0
+        # 计算每GB大小的比特率 (用于质量评估)
+        if video_info['duration'] > 0:
+            minutes = video_info['duration'] / 60
+            video_info['bitrate_per_minute'] = (video_info['file_size'] * 8) / (1024 * minutes)  # kbps per minute
+        else:
+            video_info['bitrate_per_minute'] = 0
+        return video_info
+    except Exception as e:
+        logger.error(f"获取视频信息失败 {input_path}: {e}")
+        return None
 
 
 def process_video(input_path, output_path=None,
@@ -21,7 +100,6 @@ def process_video(input_path, output_path=None,
         volume_factor = 1.0
     """
     综合视频处理方法（剪切/调速/分辨率/音量/封面/格式转换）
-
     参数说明：
     - input_path: 输入文件路径
     - output_path: 输出路径（默认自动生成）
@@ -38,39 +116,27 @@ def process_video(input_path, output_path=None,
         '-hide_banner',
         '-y'  # 覆盖输出文件
     ]
-
     # 添加时间剪切参数
     if start_time:
         cmd.extend(['-ss', start_time])
-
     # 输入文件
     cmd.extend(['-i', input_path])
-
-    # 封面图片处理
-    if cover_image:
-        cmd.extend(['-i', cover_image])
-
     # 构建滤镜链
     video_filters = []
     audio_filters = []
-
     # 速度调整
     if speed_factor != 1.0:
         video_filters.append(f"setpts={1 / speed_factor}*PTS")
         audio_filters.append(f"atempo={speed_factor}")
-
     # 分辨率调整
     if width and height:
         video_filters.append(f"scale={width}:{height}")
-
     # 音量调整
     if volume_factor != 1.0:
         audio_filters.append(f"volume={volume_factor}")
-
-        # 构建滤镜链
+    # 构建滤镜链
     filter_complex = []
     need_filter = False  # 新增判断标志
-
     # 视频处理分支
     video_stream = '0:v'
     if speed_factor != 1.0 or (width and height):
@@ -82,7 +148,6 @@ def process_video(input_path, output_path=None,
         filter_complex.append(f"[0:v]{','.join(video_filters)}[vout]")
         video_stream = "[vout]"
         need_filter = True
-
     # 音频处理分支
     audio_stream = '0:a'
     if speed_factor != 1.0 or volume_factor != 1.0:
@@ -94,21 +159,11 @@ def process_video(input_path, output_path=None,
         filter_complex.append(f"[0:a]{','.join(audio_filters)}[aout]")
         audio_stream = "[aout]"
         need_filter = True
-
-    # 封面处理
-    # if cover_image:
-    #     filter_complex.append(f"[1:v]copy[cover]")
-    #     need_filter = True
-
     # 条件添加滤镜链
     if need_filter:
         cmd.extend(['-filter_complex', ';'.join(filter_complex)])
-
     # 输出映射（动态调整）
     cmd += ['-map', video_stream, '-map', audio_stream]
-    if cover_image:
-        cmd += ['-map', '[cover]']
-
     # 编码参数
     codec_config = {
         'mp4': {'vcodec': 'libx264', 'acodec': 'aac'},
@@ -117,7 +172,6 @@ def process_video(input_path, output_path=None,
         'avi': {'vcodec': 'libxvid', 'acodec': 'mp3'}
     }
     config = codec_config.get(output_format, codec_config['mp4'])
-
     cmd.extend([
         '-c:v', config['vcodec'],
         '-c:a', config['acodec'],
@@ -125,23 +179,13 @@ def process_video(input_path, output_path=None,
         '-crf', '23',
         '-preset', 'fast'
     ])
-
-    # 设置封面属性
-    if cover_image:
-        cmd.extend([
-            '-disposition:v:0', 'default',
-            '-disposition:v:1', 'attached_pic'
-        ])
-
     # 时间参数（结束时间或持续时间）
     if duration:
         cmd.extend(['-t', duration])
     elif end_time:
         cmd.extend(['-to', end_time])
-
     # 输出文件
     cmd.append(output_path)
-
     try:
         subprocess.run(cmd, check=True)
         return output_path
@@ -167,7 +211,7 @@ def set_video_cover(input_video, cover_image):
 
 
 # 获取指定秒的第一帧
-def extract_frame(input_video, time_ss,output_image_path):
+def extract_frame(input_video, time_ss, output_image_path):
     command = [
         '-y',  # 覆盖输出文件而不询问
         '-i', input_video,  # 输入视频文件
@@ -184,10 +228,8 @@ def extract_frames(input_video_path, output_dir, start_time, end_time):
     # 确保输出目录存在
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-
     # 计算总帧数
     total_seconds = int(end_time.split(':')[-1]) - int(start_time.split(':')[-1])
-
     # 构建ffmpeg命令
     for i in range(total_seconds + 1):
         current_time = f"{int(start_time.split(':')[0]):02d}:{int(start_time.split(':')[1]):02d}:{int(start_time.split(':')[2]) + i:02d}"
@@ -219,12 +261,10 @@ def video_to_gif(input_video, start_time=None, duration=None, fps=10, scale='320
 
     if duration:
         command.extend(['-t', duration])  # 指定持续时间（可选）
-
     if scale:
         command.extend(['-vf', f'scale={scale}'])  # 指定缩放比例（可选）
     else:
         command.extend(['-vf', 'fps=' + str(fps)])  # 设置帧率
-
     command.extend([
         '-pix_fmt', 'rgb24',  # 设置像素格式
         output_gif_path  # 输出GIF文件
@@ -241,25 +281,23 @@ def extract_video_clips(input_video_path, output_dir, interval=5):
     # 确保输出目录存在
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-
-    # 获取视频的总时长
-    duration_command = [
-        '-v', 'error',
-        '-show_entries', 'format=duration',
-        '-of', 'default=noprint_wrappers=1:nokey=1',
-        input_video_path
-    ]
-    result = run_ffprobe_cmd(duration_command)
-    total_duration = float(result.stdout.strip())
-
+    # # 获取视频的总时长
+    # duration_command = [
+    #     '-v', 'error',
+    #     '-show_entries', 'format=duration',
+    #     '-of', 'default=noprint_wrappers=1:nokey=1',
+    #     input_video_path
+    # ]
+    # result = run_ffprobe_cmd(duration_command)
+    # total_duration = float(result.stdout.strip())
+    video_info = get_video_info(input_video_path)
+    duration_hms = video_info['duration_hms']
     # 计算需要截取的片段数量
-    num_clips = int(total_duration // interval)
-
+    num_clips = int(duration_hms // interval)
     # 构建并执行命令
     for i in range(num_clips):
         start_time = i * interval
         clip_output_path = os.path.join(output_dir, f'clip_{i + 1:04d}.mp4')
-
         command = [
             '-i', input_video_path,  # 输入视频文件
             '-ss', str(start_time),  # 开始时间
@@ -272,32 +310,6 @@ def extract_video_clips(input_video_path, output_dir, interval=5):
             clip_output_path  # 输出文件
         ]
         run_ffmpeg_cmd(command)
-
-
-# 获取视频信息
-def get_info(video_path):
-    command = [
-        '-v', 'quiet',  # 设置为安静模式，不打印任何信息到控制台
-        '-print_format', 'json',  # 输出格式设置为JSON
-        '-show_format',  # 显示容器格式信息
-        '-show_streams',  # 显示所有流的信息
-        video_path
-    ]
-    # 将结果从字符串转换成JSON对象
-    info = json.loads(run_ffprobe_cmd(command).stdout)
-    # 获取格式信息
-    format = info.get('format', {})
-    filename = format.get('filename')
-    raw_duration = float(format.get('duration', 0))
-    # overall_bitrate = format_info.get('bit_rate')
-    # 转换时长格式
-    try:
-        duration = file_util.seconds_to_hms(raw_duration)
-    except (ValueError, TypeError):
-        duration = "00:00:00"  # 异常时返回默认值
-    return {"filename": get_file_name(filename),
-            "duration": f"{duration}",
-            "format": format}
 
 
 # 提取音频
@@ -331,9 +343,7 @@ def add_audio_to_video(video_path, audio_path, output_path):
 def concatenate_videos_with_filter(video_paths, output_path):
     # 构建filter_complex选项
     filter_complex = f'concat=n={len(video_paths)}:v=1:a=1 [v] [a]'
-
     command = []
-
     for video in video_paths:
         command.extend(['-i', video])
 
@@ -347,32 +357,6 @@ def concatenate_videos_with_filter(video_paths, output_path):
     ])
     run_ffmpeg_cmd(command)
     return "视频合并成功，文件地址为：" + output_path
-
-
-# # 分割视频
-# def cut_video(input_path, start_time, end_time=None, duration=None):
-#     # start_time = '00:00:10'
-#     # 从第10秒开始，持续20秒
-#     # duration = '00:00:20'
-#     # 或者从第10秒开始，到第30秒结束
-#     # end_time = '00:00:30'
-#     output_path = get_download_folder() + get_file_name_no_suffix(
-#         input_path) + "(剪切)" + get_file_suffix(input_path)
-#     command = [
-#         '-i', input_path,  # 输入视频文件
-#         '-ss', start_time,  # 开始时间
-#         '-c', 'copy',  # 复制流，不重新编码
-#         output_path  # 输出文件
-#     ]
-#
-#     if duration:
-#         command.insert(4, '-t')
-#         command.insert(5, duration)
-#     elif end_time:
-#         command.insert(4, '-to')
-#         command.insert(5, end_time)
-#     run_ffmpeg_cmd(command)
-#     return "视频剪切完成，文件地址为：" + output_path
 
 
 def add_subtitle(video_path, subtitle_content, subtitle_type,
@@ -401,7 +385,6 @@ def add_subtitle(video_path, subtitle_content, subtitle_type,
     # 保存str文件
     with open(srt_file, "w", encoding="utf-8") as file:
         file.write(subtitle_content)
-
     if subtitle_type:
         # 软字幕
         cmd += [
@@ -416,7 +399,7 @@ def add_subtitle(video_path, subtitle_content, subtitle_type,
         # 字幕文件SRT转ASS
         str_to_ass(srt_file, ass_file)
         # 设置ass字体格式
-        set_ass_font(ass_file, fontname, fontsize, fontcolor, fontbordercolor, subtitle_bottom)
+        string_util.set_ass_font(ass_file, fontname, fontsize, fontcolor, fontbordercolor, subtitle_bottom)
         cmd += [
             '-c:v', 'libx264',
             '-vf', f"subtitles={ass_file}",
@@ -440,56 +423,9 @@ def str_to_ass(srt_file, ass_file):
                     f'{ass_file}'])
 
 
-# 设置ass字体格式
-def set_ass_font(ass_file, fontname, fontsize, fontcolor, fontbordercolor, subtitle_bottom):
-    with open(ass_file, 'r+', encoding='utf-8') as f:
-        content = f.read()
-
-        # 使用正则表达式精准匹配样式行（包含Windows字体名空格）
-        style_pattern = re.compile(r'^Style:\s*.*', flags=re.MULTILINE)
-        new_style = (
-            f"Style: Default,{fontname},{fontsize},"
-            f"{fontcolor},&HFFFFFF,{fontbordercolor},&H0,0,0,0,0,"
-            f"100,100,0,0,1,1,0,2,10,10,{subtitle_bottom},1"
-        )
-        updated_content = re.sub(style_pattern, new_style, content, count=1)
-
-        f.seek(0)
-        f.write(updated_content)
-        f.truncate()
-    return ass_file
-
-
-def parse_time(time_str):
-    h, m, s_ms = time_str.split(':')
-    s, ms = s_ms.split('.') if '.' in s_ms else (s_ms, '000')
-    total_seconds = int(h) * 3600 + int(m) * 60 + int(s) + int(ms) / 1000
-    return total_seconds
-
-
-def format_time(seconds):
-    hours = int(seconds // 3600)
-    mins = int((seconds % 3600) // 60)
-    secs = seconds % 60
-    return f"{hours:02d}:{mins:02d}:{secs:06.3f}"
-
-
-def adjust_time(time_str, delta_seconds):
-    total_seconds = parse_time(time_str)
-    total_seconds += delta_seconds
-    if total_seconds < 0:
-        total_seconds = 0  # 防止时间变为负数
-    return format_time(total_seconds)
-
-
 # 分割视频
 def cut_video(input_path, start_time, end_time=None, duration=None, output_suffix="(剪切)"):
     output_path = config.ROOT_DIR_WIN / "static/uploads" / f"{get_file_name_no_suffix(input_path)}{output_suffix}{get_file_suffix(input_path)}"
-    # command = ['-y',
-    #            '-i', input_path,
-    #            '-ss', start_time,
-    #            '-c',
-    #            'copy']
     command = [
         '-y',
         '-ss', start_time,
@@ -520,7 +456,9 @@ def cut_video_silence(input_path, start_time, end_time, output_suffix):
         '-ss', start_time,
         '-an',  # 禁用音频
         '-c:v', 'libx264',
-        '-vf', 'scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setpts=PTS-STARTPTS',  # 关键修改：统一分辨率
+        '-vf',
+        'scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setpts=PTS-STARTPTS',
+        # 关键修改：统一分辨率
         '-vsync', 'cfr',
         '-video_track_timescale', '1000',
         '-r', '30',
@@ -544,16 +482,15 @@ def concatenate_videos_with_transitions(clip_infos, output_path):
         start = clip['start_time']
         end = clip['end_time']
         if i > 0 and clip_infos[i - 1]['transition'] == 'dissolve':
-            start = adjust_time(start, -0.5)
+            start = time_util.adjust_time(start, -0.5)
         if i < n - 1 and clip['transition'] == 'dissolve':
-            end = adjust_time(end, +0.5)
+            end = time_util.adjust_time(end, +0.5)
         adjusted_clips.append({
             'source_name': clip['source_name'],
             'start_time': start,
             'end_time': end,
             'transition': clip['transition']
         })
-
     intermediate_files = []
     for clip in adjusted_clips:
         source_path = config.ROOT_DIR_WIN / config.source_videos_dir / clip['source_name']
@@ -591,7 +528,7 @@ def concatenate_videos_with_transitions(clip_infos, output_path):
         current_stream = f"out{i}"  # 更新当前流为输出
     # 计算总时长
     cut_total_duration = sum(
-        get_video_duration(file) for file in intermediate_files
+        ffmpeg_util.get_video_duration(file) for file in intermediate_files
     )
     # 步骤3：添加音频流和最终输出
     filter_script.append(
@@ -607,7 +544,7 @@ def concatenate_videos_with_transitions(clip_infos, output_path):
         '-filter_complex', ''.join(filter_script),
         '-map', '[vout]',
         '-map', '[aout]',
-        '-c:v', 'h264_nvenc' if check_nvidia() else 'libx264',  # 自动检测NVIDIA显卡
+        '-c:v', 'h264_nvenc' if ffmpeg_util.check_nvidia() else 'libx264',  # 自动检测NVIDIA显卡
         '-preset', 'fast',
         '-profile:v', 'main',
         '-movflags', '+faststart',
@@ -616,27 +553,187 @@ def concatenate_videos_with_transitions(clip_infos, output_path):
         '-shortest',
         str(output_path)
     ]
-
     run_ffmpeg_cmd(command)
     return "合并成功"
 
 
-def check_nvidia():
-    """检测NVIDIA显卡支持"""
+def compress_video_h265(
+        input_path,
+        output_path=None,
+        crf=20,
+        max_bitrate='8000k',
+        audio_bitrate='64k',
+        preset=None,
+        use_gpu=True,
+        gpu_accelerator=None
+):
+    """
+    智能视频压缩函数 (自动选择GPU/CPU编码)
+    参数:
+    - input_path: 输入视频路径
+    - output_path: 输出路径(可选)
+    - crf: 质量因子(18-28, 默认23)
+    - max_bitrate: 最大比特率(如 '1500k')
+    - audio_bitrate: 音频比特率(如 '64k')
+    - use_gpu: 是否启用GPU加速(默认True)
+    - gpu_accelerator: 强制指定加速类型(可选: nvidia, amd, qsv, videotoolbox)
+    """
+    input_path = Path(input_path)
+    if not output_path:
+        output_path = input_path.parent / f"{input_path.stem}_h256.mp4"
+    # 获取原始视频信息
+    original_info = get_video_info(input_path)
+    original_size = input_path.stat().st_size
+    # 检查是否需要压缩
+    if not ffmpeg_util.should_compress(original_info):
+        return None
+    # 智能调整压缩参数
+    crf = ffmpeg_util.smart_crf_selection(original_info, default_crf=crf)
+    max_bitrate = ffmpeg_util.smart_max_bitrate(original_info, default_bitrate=max_bitrate)
+    # 构建基础命令
+    command = ['-y',
+               '-i',
+               str(input_path)]
+    # 自动检测GPU加速器
+    if gpu_accelerator:
+        accelerator = gpu_accelerator.lower()
+    elif use_gpu:
+        accelerator = ffmpeg_util.detect_gpu_accelerator()
+    else:
+        accelerator = 'cpu'
+    command = ffmpeg_util.extend_accelerator(command, accelerator, preset, crf, audio_bitrate)
+    command.append(str(output_path))
+    # 执行命令
     try:
-        subprocess.run(['nvidia-smi'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        return True
-    except FileNotFoundError:
-        return False
+        logger.info(f"执行压缩命令: {' '.join(command)}")
+        run_ffmpeg_cmd(command)
+        # 检查压缩后文件大小
+        if output_path.exists():
+            compressed_size = output_path.stat().st_size
+            compression_ratio = compressed_size / original_size
+            logger.info(f"压缩成功! 原始大小: {original_size / (1024 * 1024):.2f}MB -> "
+                        f"压缩后: {compressed_size / (1024 * 1024):.2f}MB (比例: {compression_ratio:.2%})")
+            # # 如果压缩后文件反而变大
+            # if compression_ratio >= 1.0:
+            #     logger.warning("压缩后文件反而变大! 将删除压缩文件")
+            #     output_path.unlink()
+            #     return None
+            # elif compression_ratio > 0.95:
+            #     logger.warning("压缩效果不佳，文件大小几乎未减少")
+            return output_path
+        else:
+            logger.error("压缩成功但输出文件不存在")
+            return None
+    except subprocess.CalledProcessError as e:
+        # GPU失败自动回退到CPU
+        if use_gpu and accelerator != 'cpu':
+            logger.warning("GPU加速失败, 尝试CPU编码...")
+            return compress_video_h265(
+                input_path, output_path, crf, max_bitrate,
+                audio_bitrate, preset, use_gpu=False
+            )
+        logger.error(f"压缩失败! 错误信息:\n{e.stderr}")
+        return None
+    except Exception as e:
+        logger.error(f"压缩过程中发生异常: {e}")
+        return None
 
 
-def get_video_duration(input_path):
-    duration, description = video_downloader.read_metadata(input_path)
-    return float(duration.strip())
+def batch_compress_videos(input_dir, backup_dir, crf=20, max_bitrate='8000k', skip_existing=True):
+    """
+    批量压缩文件夹内所有视频
+    参数:
+    - input_dir: 输入文件夹路径
+    - backup_dir: 原始视频备份目录
+    - crf: 压缩质量因子 值越高压缩越多 (22-26)
+    - max_bitrate: 限制最大比特率
+    - skip_existing: 是否跳过已存在的压缩文件
+    """
+    # 确保备份目录存在
+    backup_path = Path(backup_dir)
+    backup_path.mkdir(parents=True, exist_ok=True)
+    # 支持的视频扩展名
+    video_extensions = ['.mp4', '.mov', '.avi', '.mkv', '.flv', '.wmv', '.mpg', '.mpeg', '.ts', '.mts', '.m2ts']
+    # 先获取所有视频文件列表
+    all_video_files = []
+    for file_path in Path(input_dir).rglob('*'):
+        if file_path.is_file() and file_path.suffix.lower() in video_extensions:
+            # 跳过已压缩文件（文件名包含_h256）
+            if '_h256' in file_path.stem:
+                continue
+            all_video_files.append(file_path)
+    # 统计信息
+    total_files = len(all_video_files)  # 视频文件总数
+    processed_files = 0  # 已处理文件计数
+    skipped_files = 0
+    compressed_files = 0
+    failed_files = 0
+    # 添加时间管理变量
+    start_time = time.time()  # 批处理开始时间
+    last_break_time = start_time  # 上次休息结束时间
+    # 遍历所有视频文件
+    for file_path in all_video_files:
+        # 检查是否需要休息
+        current_time = time.time()
+        working_duration = current_time - last_break_time
+        if working_duration >= 1800:  # 30分钟（1800秒）
+            logger.info(f"\n{'=' * 50}")
+            logger.info(f"已连续工作 {working_duration / 60:.1f} 分钟，开始休息30分钟...")
+            time.sleep(1800)  # 30分钟（1800秒）
+            logger.info("休息结束，继续处理...")
+            last_break_time = time.time()  # 更新上次休息结束时间
+
+        processed_files += 1
+        remaining_files = total_files - processed_files
+        logger.info(f"\n{'=' * 50}")
+        logger.info(f"处理进度: {processed_files}/{total_files} (剩余: {remaining_files})")
+        logger.info(f"当前处理: {file_path.name} ({file_path.stat().st_size / (1024 * 1024):.2f}MB)")
+        # 生成压缩后的路径
+        output_path = file_path.parent / f"{file_path.stem}_h256.mp4"
+        # 如果压缩文件已存在且需要跳过
+        if skip_existing and output_path.exists():
+            logger.info(f"压缩文件已存在，跳过: {output_path.name}")
+            skipped_files += 1
+            continue
+        try:
+            # 压缩视频
+            compressed_file = compress_video_h265(
+                input_path=file_path,
+                output_path=output_path,
+                crf=crf,
+                max_bitrate=max_bitrate
+            )
+            # 如果压缩成功且文件存在
+            if compressed_file and compressed_file.exists():
+                # 移动原始文件到备份目录
+                backup_file = backup_path / file_path.name
+                if not backup_file.exists():  # 避免覆盖
+                    try:
+                        shutil.move(str(file_path), str(backup_file))
+                        logger.info(f"原始文件已备份到: {backup_file}")
+                    except Exception as e:
+                        logger.error(f"备份原始文件失败: {e}")
+                else:
+                    logger.info(f"备份文件已存在，跳过备份: {backup_file.name}")
+                compressed_files += 1
+            else:
+                failed_files += 1
+                logger.warning("压缩未成功完成")
+        except Exception as e:
+            failed_files += 1
+            logger.error(f"处理文件时出错 {file_path.name}: {e}")
+            continue
+    # 输出统计信息
+    logger.info(f"\n{'=' * 50}")
+    logger.info(f"批量压缩完成!")
+    logger.info(f"总文件数: {total_files}")
+    logger.info(f"跳过文件: {skipped_files}")
+    logger.info(f"成功压缩: {compressed_files}")
+    logger.info(f"失败文件: {failed_files}")
 
 
-# cmd执行ffmpeg命令
 def run_ffmpeg_cmd(cmd):
+    # cmd执行ffmpeg命令
     FFMPEG_BIN = "ffmpeg"
 
     # # ffmpeg
@@ -654,10 +751,12 @@ def run_ffmpeg_cmd(cmd):
             FFMPEG_BIN
         ]
         # 检查ffmpeg是否支持CUDA
-        # if check_cuda_support():
+        # if ffmpeg_util.check_cuda_support():
         #     command.extend(['-hwaccel', 'cuda'])
         command.extend(cmd)
         print(f"ffmpeg运行命令：{command}")
+        # result = subprocess.run(command, check=True, stderr=subprocess.PIPE,
+        #                         text=True, encoding='utf-8', errors='ignore')
         result = subprocess.run(command,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT,
@@ -666,7 +765,6 @@ def run_ffmpeg_cmd(cmd):
                                 check=True,
                                 creationflags=0 if sys.platform != 'win32' else subprocess.CREATE_NO_WINDOW
                                 )
-        print(f"ffmpeg返回结果 ：{result}")
         return result
     except subprocess.CalledProcessError as e:
         print("An error occurred while running the command.")
@@ -675,50 +773,59 @@ def run_ffmpeg_cmd(cmd):
         print(f"Output: {e.output}")
 
 
-def check_cuda_support():
-    # 检查ffmpeg是否支持CUDA
-    cmd = ['ffmpeg', '-hwaccels']
-    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    if result and 'cuda' in result.stdout.lower():
-        return True
-    return False
-
-
-# cmd执行ffprobe命令
-def run_ffprobe_cmd(cmd):
-    FFPROBE_BIN = "ffprobe"
-    # # ffmpeg
-    # if sys.platform == 'win32':
-    #     os.environ['PATH'] = ROOT_DIR + f';{ROOT_DIR}/ffmpeg;' + os.environ['PATH']
-    #     if Path(ROOT_DIR + '/ffmpeg/ffprobe.exe').is_file():
-    #         FFPROBE_BIN = ROOT_DIR + '/ffmpeg/ffprobe.exe'
-    # else:
-    #     os.environ['PATH'] = ROOT_DIR + f':{ROOT_DIR}/ffmpeg:' + os.environ['PATH']
-    #     if Path(ROOT_DIR + '/ffmpeg/ffprobe').is_file():
-    #         FFPROBE_BIN = ROOT_DIR + '/ffmpeg/ffprobe'
-    try:
-        command = [
-            FFPROBE_BIN
-        ]
-        command.extend(cmd)
-        result = subprocess.run(command,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT,
-                                text=True,
-                                encoding="utf-8",
-                                check=True,
-                                creationflags=0 if sys.platform != 'win32' else subprocess.CREATE_NO_WINDOW
-                                )
-        print(result)
-        return result
-    except subprocess.CalledProcessError as e:
-        print("An error occurred while running the command.")
-        print(f"Command: {e.cmd}")
-        print(f"Return code: {e.returncode}")
-        print(f"Output: {e.output}")
+#
+# # cmd执行ffprobe命令
+# def run_ffprobe_cmd(cmd):
+#     FFPROBE_BIN = "ffprobe"
+#     # # ffmpeg
+#     # if sys.platform == 'win32':
+#     #     os.environ['PATH'] = ROOT_DIR + f';{ROOT_DIR}/ffmpeg;' + os.environ['PATH']
+#     #     if Path(ROOT_DIR + '/ffmpeg/ffprobe.exe').is_file():
+#     #         FFPROBE_BIN = ROOT_DIR + '/ffmpeg/ffprobe.exe'
+#     # else:
+#     #     os.environ['PATH'] = ROOT_DIR + f':{ROOT_DIR}/ffmpeg:' + os.environ['PATH']
+#     #     if Path(ROOT_DIR + '/ffmpeg/ffprobe').is_file():
+#     #         FFPROBE_BIN = ROOT_DIR + '/ffmpeg/ffprobe'
+#     try:
+#         command = [
+#             FFPROBE_BIN
+#         ]
+#         command.extend(cmd)
+#         result = subprocess.run(command,
+#                                 stdout=subprocess.PIPE,
+#                                 stderr=subprocess.STDOUT,
+#                                 text=True,
+#                                 encoding="utf-8",
+#                                 check=True,
+#                                 creationflags=0 if sys.platform != 'win32' else subprocess.CREATE_NO_WINDOW
+#                                 )
+#         print(result)
+#         return result
+#     except subprocess.CalledProcessError as e:
+#         print("An error occurred while running the command.")
+#         print(f"Command: {e.cmd}")
+#         print(f"Return code: {e.returncode}")
+#         print(f"Output: {e.output}")
 
 
 if __name__ == '__main__':
+    import log_config
+
+    # 开启日志配置
+    log_config.log_run()
+
+    # 总大小963GB
+    # SOURCE_FOLDER = "G:\\Walloaoer\\A\\日"
+    SOURCE_FOLDER = "G:\\Walloaoer\\动漫\\IP"
+    # 备份文件夹
+    BACKUP_FOLDER = "G:\\Walloaoer\\beifen"
+    # 执行批量压缩
+    logger.info("启动批量视频压缩任务")
+    batch_compress_videos(
+        input_dir=SOURCE_FOLDER,
+        backup_dir=BACKUP_FOLDER
+    )
+    # get_video_info("G:\\Walloaoer\\A\\YM\\Who_h256.mp4")
     # 一些Python与ffmpeg音频处理的实用程序和命令:https://www.cnblogs.com/zhaoke271828/p/17007046.html
     input_video_path = "D:/abm/abm.mp4"
     output_video = "D:/output113.mp4"
@@ -728,7 +835,6 @@ if __name__ == '__main__':
     # input_subtitle_path = "D:/abm/abm.srt"
     # add_subtitle(input_video_path, input_subtitle_path, 50)
 
-    # get_info(input_video_path)
     # get_audio(input_video_path, audio_output)
     # get_video(input_video_path, output_video)
     # change_resolution(input_video_path, output_video, 640, 480)
@@ -798,6 +904,6 @@ CC for Closed Caption
 """
     # Courier New
     # Impact
-    add_subtitle(video_url, subtitle_content, False,
-                 fontname="楷体", fontsize=16, fontcolor="&Hffffff",
-                 fontbordercolor="&H000000", subtitle_bottom=16)
+    # add_subtitle(video_url, subtitle_content, False,
+    #              fontname="楷体", fontsize=16, fontcolor="&Hffffff",
+    #              fontbordercolor="&H000000", subtitle_bottom=16)

@@ -1,5 +1,5 @@
 from data import use_ffmpeg, video_downloader, use_fast_whisper
-from util import file_util
+from util import time_util
 from fastapi import APIRouter
 from db.Do import BaseReq
 from pathlib import Path
@@ -17,7 +17,7 @@ async def download_video(req: BaseReq):
     # video_info = use_ffmpeg.get_info(access_url_path)
     # 转换时长格式
     try:
-        duration = file_util.seconds_to_hms(duration)
+        duration = time_util.seconds_to_hms(duration)
     except (ValueError, TypeError):
         duration = "00:00:00"  # 异常时返回默认值
     return {
@@ -53,11 +53,11 @@ async def process_video(req: BaseReq):
         cover_image=getattr(req, 'cover_image', None),
         output_format=output_format
     )
-    video_info = use_ffmpeg.get_info(output_path)
+    video_info = use_ffmpeg.get_video_info(output_path)
     return {
         "videoWebPath": f"{config.UPLOAD_DIR}{input_file.stem}_processed.{output_format}",
         "videoPath": output_path,
-        "duration": video_info["duration"]
+        "duration": video_info["duration_hms"]
     }
 
 
@@ -128,9 +128,9 @@ async def video_add_subtitle(req: BaseReq):
     title = use_ffmpeg.add_subtitle(req.video_input, req.subtitle_content, req.is_soft, req.fontname, req.fontsize,
                                     req.fontcolor, req.subtitle_bottom)
     access_url_path = config.ROOT_DIR_WIN / config.UPLOAD_DIR / title
-    video_info = use_ffmpeg.get_info(access_url_path)
+    video_info = use_ffmpeg.get_video_info(access_url_path)
     return {
         "videoWebPath": f"{config.UPLOAD_DIR}{title}",
         "videoPath": access_url_path,
-        "duration": video_info["duration"]
+        "duration": video_info["duration_hms"]
     }

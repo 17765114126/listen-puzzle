@@ -53,6 +53,26 @@ def parse_srt(srt_text):
         print(f"Content: {sub['content']}\n")
 
 
+# 设置ass字体格式
+def set_ass_font(ass_file, fontname, fontsize, fontcolor, fontbordercolor, subtitle_bottom):
+    with open(ass_file, 'r+', encoding='utf-8') as f:
+        content = f.read()
+
+        # 使用正则表达式精准匹配样式行（包含Windows字体名空格）
+        style_pattern = re.compile(r'^Style:\s*.*', flags=re.MULTILINE)
+        new_style = (
+            f"Style: Default,{fontname},{fontsize},"
+            f"{fontcolor},&HFFFFFF,{fontbordercolor},&H0,0,0,0,0,"
+            f"100,100,0,0,1,1,0,2,10,10,{subtitle_bottom},1"
+        )
+        updated_content = re.sub(style_pattern, new_style, content, count=1)
+
+        f.seek(0)
+        f.write(updated_content)
+        f.truncate()
+    return ass_file
+
+
 def get_bracket_json(clip_resp):
     # 获取字符串中[]之间的内容并转化为json
     # 步骤1：定位起始和结束位置

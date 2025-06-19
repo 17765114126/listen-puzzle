@@ -176,13 +176,3 @@ def update_value(key: str, value):
     except FileNotFoundError:
         with open('config.py', 'w') as f:
             f.write(f"{key} = {repr(value)}")
-
-
-def seconds_to_hms(seconds):
-    """将秒数转换为 HH:MM:SS 格式"""
-    seconds = int(round(float(seconds)))  # 处理浮点数和四舍五入
-    hours = seconds // 3600
-    remainder = seconds % 3600
-    minutes = remainder // 60
-    seconds = remainder % 60
-    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"

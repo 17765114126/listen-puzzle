@@ -30,11 +30,11 @@ async def upload_video(file_stream: UploadFile = File(...)):
         while content := await file_stream.read(1024 * 1024):  # 每次读取1MB
             buffer.write(content)
     access_url_path = config.ROOT_DIR_WIN / config.UPLOAD_DIR / filename
-    video_info = use_ffmpeg.get_info(access_url_path)
+    video_info = use_ffmpeg.get_video_info(access_url_path)
     return {
         "webPath": f"{config.UPLOAD_DIR}{filename}",
         "localPath": access_url_path,
-        "duration": video_info["duration"]
+        "duration": video_info["duration_hms"]
     }
 
 
@@ -50,11 +50,11 @@ async def upload_source_videos_stream(file_stream: UploadFile = File(...)):
         while content := await file_stream.read(1024 * 1024):  # 每次读取1MB
             buffer.write(content)
     access_url_path = config.ROOT_DIR_WIN / config.source_videos_dir / filename
-    video_info = use_ffmpeg.get_info(access_url_path)
+    video_info = use_ffmpeg.get_video_info(access_url_path)
     return {
         "webPath": f"{config.source_videos_dir}{filename}",
         "localPath": access_url_path,
-        "duration": video_info["duration"]
+        "duration": video_info["duration_hms"]
     }
 
 

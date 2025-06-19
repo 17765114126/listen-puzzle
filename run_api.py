@@ -4,8 +4,9 @@ os.environ['HF_HOME'] = 'D:/hf-model'
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-import logging
+import log_config
 import config
+import logging
 from api.svc_api import router as api_interface
 from api.tool_api import router as api_tool
 from api.video_api import router as video_api
@@ -17,8 +18,7 @@ from util import file_util
 
 app = FastAPI()
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+
 
 app.include_router(api_interface)
 app.include_router(api_tool)
@@ -51,6 +51,8 @@ def run():
     # 清除upload_dir
     file_util.clean_upload_dir(config.UPLOAD_DIR)
 
+    # 开启日志配置
+    log_config.log_run()
     logging.info('------主程序开始运行-------')
     uvicorn.run(app='run_api:app',
                 host="127.0.0.1",
