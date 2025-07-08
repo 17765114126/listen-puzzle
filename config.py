@@ -29,7 +29,7 @@ source_audios_dir = "static/source_timbre/"
 
 llm_model = 'deepseek'
 model_name = 'deepseek-chat'
-llm_key = 'sk-39b43b41ea7a4642b40eac8f05534b97'
+llm_key = ''
 
 video_type = 'pexels'
 video_api_keys = 'AQanz5J1ptLpe8EzANVz4fFN9R0friFxQLnvzpTjTLFbwKjpR3eL6XLA'
