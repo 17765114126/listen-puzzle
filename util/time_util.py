@@ -18,16 +18,9 @@ def parse_time(time_str):
     return total_seconds
 
 
-def format_time(seconds):
-    hours = int(seconds // 3600)
-    mins = int((seconds % 3600) // 60)
-    secs = seconds % 60
-    return f"{hours:02d}:{mins:02d}:{secs:06.3f}"
-
-
 def adjust_time(time_str, delta_seconds):
     total_seconds = parse_time(time_str)
     total_seconds += delta_seconds
     if total_seconds < 0:
         total_seconds = 0  # 防止时间变为负数
-    return format_time(total_seconds)
+    return seconds_to_hms(total_seconds)

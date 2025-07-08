@@ -2,11 +2,13 @@ import os
 import random
 import yt_dlp
 from util.string_util import sanitize_title
+from util import time_util
 import config
 import requests
 from urllib.parse import urlencode
 from data import use_video_analyse
 from mutagen.mp4 import MP4
+from db.Do import BaseReq, we_library, VideoSource
 
 
 def dlp_download_video(info, output_dir, resolution='1080p'):
@@ -111,6 +113,8 @@ def search_videos_pexels(
         # check if video has desired minimum duration
         if duration < minimum_duration:
             continue
+        # 转换秒数为HH:MM:SS格式
+        duration_formatted = time_util.seconds_to_hms(duration)
         video_files = v["video_files"]
         # loop through each url to determine the best quality
         for video in video_files:
@@ -121,6 +125,7 @@ def search_videos_pexels(
                     "provider": "pexels",
                     "url": video["link"],
                     "duration": duration,
+                    "duration_hms": duration_formatted,  # 格式化的时长 (如00:00:30)
                     "search_term": search_term
                 }
                 video_items.append(item)
@@ -177,7 +182,6 @@ def download_video(video_info):
     # 设置保存目录
     save_dir = config.ROOT_DIR_WIN / config.source_videos_dir
     url = video_info['url']
-    duration = video_info['duration']
     # search_term = video_info['search_term']
     """下载单个视频到指定目录"""
     # 创建目录（如果不存在）
@@ -195,27 +199,19 @@ def download_video(video_info):
                 f.write(chunk)
     # 解析视频具体内容
     video_analyse_result = use_video_analyse.video_analyze(filepath)
-    # 获取描述
-    description = video_analyse_result[0].get("description")
-    # 添加元数据
-    video = MP4(filepath)
-    video["\xa9des"] = description  # 标准描述字段
-    video["\xa9alb"] = str(duration)  # 使用专辑字段存储时长
-    video.save()
+    # 创建 VideoSource 实例
+    video_source = VideoSource(
+        table_name="video_source",
+        video_name=filename,
+        web_path=f"{config.source_videos_dir}{filename}",
+        local_path=filepath,
+        duration=str(video_info['duration']),
+        duration_hms=video_info["duration_hms"],
+        description=video_analyse_result[0].get("description"),
+    )
+    we_library.add_or_update(video_source, video_source.table_name)
     print(f"已下载：{filename}")
     return True
-
-
-def read_metadata(filepath):
-    # 读取元数据
-    try:
-        video = MP4(filepath)
-        description = video.get("\xa9des", ["无描述"])[0]
-        duration = video.get("\xa9alb", ["未知时长"])[0]
-        return duration, description
-    except Exception as e:
-        print(f"读取元数据失败: {str(e)}")
-        return {}
 
 
 def keywords_download(keywords):

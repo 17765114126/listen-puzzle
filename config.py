@@ -17,7 +17,6 @@ ROOT_DIR_WIN = Path(__file__).parent.resolve()
 ROOT_DIR = _get_executable_path()
 _root_path = Path(ROOT_DIR)
 
-is_use_frame_pack = bool(False)
 
 api_host = 9527
 web_host = 9528
@@ -25,14 +24,16 @@ listenport = 9529
 
 UPLOAD_DIR = "static/uploads/"
 source_videos_dir = "static/source_videos/"
+source_bgm_dir = "static/source_bgm/"
 source_audios_dir = "static/source_timbre/"
 
 llm_model = 'deepseek'
 model_name = 'deepseek-chat'
-llm_key = '111'
+llm_key = 'sk-39b43b41ea7a4642b40eac8f05534b97'
 
 video_type = 'pexels'
-video_api_keys = '111'
+video_api_keys = 'AQanz5J1ptLpe8EzANVz4fFN9R0friFxQLnvzpTjTLFbwKjpR3eL6XLA'
+
 
 
 # 数字人设置

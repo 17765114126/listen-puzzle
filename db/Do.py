@@ -27,6 +27,18 @@ class ChatRole(BaseModel):
     role_setting: Optional[str] = None
 
 
+class VideoSource(BaseModel):
+    table_name: str = "video_source"
+    id: Optional[int] = None
+    video_name: Optional[str] = None
+    web_path: Optional[str] = None
+    local_path: Optional[str] = None
+    duration: Optional[float] = None
+    duration_hms: Optional[str] = None
+    description: Optional[str] = None
+    video_type: Optional[bool] = 0
+
+
 def test_nltk():
     # 问题：语音克隆英文转换报错
     import nltk

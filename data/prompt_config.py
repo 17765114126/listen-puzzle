@@ -1,6 +1,6 @@
 def keywords_prompt(creative):
     return f"""
-    根据下面的文案生成3个高度相关的视频搜索关键词：
+    根据下面的文案生成2个高度相关的视频搜索关键词：
     {creative}
     要求：
     1. 搜索词以,分隔
@@ -27,9 +27,10 @@ def clip_prompt(creative, source_infos, duration):
           "critical_rules": [
             "⚠️ 绝对时间约束: start_time全部等于00:00:00.000" 
             "⚠️ 绝对时间约束: start_time全部等于00:00:00.000" 
-            "⚠️ 绝对时间约束: end_time < video_duration",
+            "⚠️ 绝对时间约束: end_time < duration",
             "⏱ 总时长控制: 所有片段的(end_time)累计必须等于{duration}秒",
             "🔒 源数据锁定: 必须完整保留source_name的原始哈希值（如3851984）"
+            "⚠️ 与主题creative_script无关的source_info不要反回"
           ],
           "technical_specs": [
             "时间格式: 时间码格式强制为HH:MM:SS.mmm（例：00:00:07.500）",
@@ -43,21 +44,21 @@ def clip_prompt(creative, source_infos, duration):
         }},
         "processing_logic": [
           "STEP 1: 语义分析 - 解析文案中的关键词/情感/节奏",
-          "STEP 2: 时长校验 - 验证所有end_time ≤ video_duration",
+          "STEP 2: 时长校验 - 验证所有end_time ≤ duration",
           "STEP 3: 节奏规划 - 按『建立-发展-高潮-收尾』结构分配时段",
       }},
       "response_example":     
       [
          {{
-          "source_name": "source1.mp4",
-          "video_duration": 15,
+          "id": 1,
+          "duration": 15,
           "start_time": "00:00:00.000",
           "end_time": "00:00:12.000",
           "transition": "dissolve"
         }},
         {{
-          "source_name": "source2.mp4",
-          "video_duration": 20,
+          "id": 2,
+          "duration": 20,
           "start_time": "00:00:00.000",
           "end_time": "00:00:18.000",
           "transition": "cut"

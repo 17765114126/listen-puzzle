@@ -38,6 +38,7 @@ async def generate_endpoint(req: BaseReq):
 
 @router.post("/cancel")
 async def cancel_generation():
+    from data.frame_pack import frame_pack_f1
     frame_pack_f1.end_process()
     # 这里实现取消生成逻辑
     return {"status": "cancelled"}

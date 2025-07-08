@@ -2,49 +2,37 @@ from data import use_llm, use_ffmpeg, prompt_config, video_downloader
 from util import string_util, file_util
 import config
 from fastapi import APIRouter
-from db.Do import BaseReq
-from mutagen.mp4 import MP4
+from db.Do import BaseReq, we_library, VideoSource
 import logging as logger
+
 router = APIRouter()
 
 
 @router.post("/get_source_videos")
-def get_source_videos():
-    # 获取已存在本地素材
-    save_dir = config.ROOT_DIR_WIN / config.source_videos_dir
-    folder_file_names = file_util.get_folder_file_name(save_dir)
-    source_infos = []
-    for folder_file_name in folder_file_names:
-        duration, description = video_downloader.read_metadata(save_dir / folder_file_name)
-        source_info = {
-            "source_name": folder_file_name,
-            "source_url": f"{config.source_videos_dir}{folder_file_name}",
-            "description": description,
-            "duration": duration,
-        }
-        source_infos.append(source_info)
-    return source_infos
+def get_source_videos(req: BaseReq):
+    # 获取素材库素材
+    return we_library.fetch_all(f"SELECT * FROM video_source WHERE video_type=?;",
+                                (req.video_type,))
 
 
-@router.post("/update_video_description")
-def update_video_description(req: BaseReq):
-    # 更新本地素材描述
-    video = MP4(config.source_videos_dir + req.source_url)
-    video["\xa9des"] = req.description  # 标准描述字段
-    video.save()
-    return True
+@router.post("/update_video_source")
+def update_video_description(req: VideoSource):
+    # 修改
+    return we_library.add_or_update(req, req.table_name)
 
 
 @router.post("/del_source_videos")
 def del_source_videos(req: BaseReq):
     # 删除本地素材
-    return file_util.del_file(config.source_videos_dir + req.source_url)
+    video_source = we_library.fetch_one(f"SELECT * FROM video_source WHERE id=?;", (req.id,))
+    file_util.del_file(video_source['local_path'])
+    return we_library.execute_query("DELETE FROM video_source WHERE id=?;", (req.id,))
 
 
-@router.post("/del_all_source_videos")
-def del_source_videos():
-    # 删除全部本地素材
-    return file_util.del_file(config.source_videos_dir)
+# @router.post("/del_all_source_videos")
+# def del_source_videos():
+#     # 删除全部本地素材
+#     return file_util.del_file(config.source_videos_dir)
 
 
 @router.post("/llm_get_source")
@@ -64,17 +52,18 @@ def llm_get_source(req: BaseReq):
 def videos_transitions(req: BaseReq):
     audioUrl = req.dict().get("audioUrl", None)
     logger.info("=================================视频处理=================================")
-    save_dir = config.ROOT_DIR_WIN / config.source_videos_dir
-    folder_file_names = file_util.get_folder_file_name(save_dir)
-    source_infos = []
-    for folder_file_name in folder_file_names:
-        duration, description = video_downloader.read_metadata(save_dir / folder_file_name)
-        source_info = {
-            "source_name": folder_file_name,
-            "video_duration": duration,
-            "video_describe": description
-        }
-        source_infos.append(source_info)
+    # save_dir = config.ROOT_DIR_WIN / config.source_videos_dir
+    # folder_file_names = file_util.get_folder_file_name(save_dir)
+    # source_infos = []
+    source_infos = we_library.fetch_all(f"SELECT id,duration,description FROM video_source WHERE video_type=?;",
+                                        (1,))
+    # for video_source in video_source_use:
+    #     source_info = {
+    #         "source_name": folder_file_name,
+    #         "video_duration": video_source["duration"],
+    #         "video_describe": video_source["description"]
+    #     }
+    #     source_infos.append(source_info)
     duration = 30
     if audioUrl is not None:
         video_info = use_ffmpeg.get_video_info(req.audioUrl)

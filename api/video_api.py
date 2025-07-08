@@ -139,8 +139,6 @@ async def video_add_subtitle(req: BaseReq):
 
 @router.post("/start_compression")
 def start_compression(req: BaseReq):
-    # 总大小963GB
-    # 执行批量压缩
     logger.info("启动批量视频压缩任务")
     use_ffmpeg.batch_compress_videos(
         input_dir=file_util.format_windows_path(req.input_dir),

@@ -5,6 +5,7 @@ from util import time_util, string_util, ffmpeg_util, file_util
 import logging as logger
 import config
 import time
+from db.Do import we_library
 
 
 def get_video_info(input_path):
@@ -449,7 +450,9 @@ def cut_video_silence(input_path, start_time, end_time, output_suffix):
 
 def concatenate_videos_with_transitions(clip_infos, output_path):
     print("========================剪切生成中间文件=================================")
-    adjusted_clips = []
+    intermediate_files = []
+    # 总时长
+    cut_total_duration = 0
     n = len(clip_infos)
     for i in range(n):
         clip = clip_infos[i]
@@ -459,21 +462,15 @@ def concatenate_videos_with_transitions(clip_infos, output_path):
             start = time_util.adjust_time(start, -0.5)
         if i < n - 1 and clip['transition'] == 'dissolve':
             end = time_util.adjust_time(end, +0.5)
-        adjusted_clips.append({
-            'source_name': clip['source_name'],
-            'start_time': start,
-            'end_time': end,
-            'transition': clip['transition']
-        })
-    intermediate_files = []
-    for clip in adjusted_clips:
-        source_path = config.ROOT_DIR_WIN / config.source_videos_dir / clip['source_name']
+
+        video_source = we_library.fetch_one(f"SELECT * FROM video_source WHERE id=?;", (clip['id'],))
         output_file = cut_video_silence(
-            source_path,
-            str(clip['start_time']),
-            end_time=str(clip['end_time']),
+            video_source["local_path"],
+            str(start),
+            end_time=str(end),
             output_suffix=f"({len(intermediate_files)})"
         )
+        cut_total_duration += video_source["duration"]
         intermediate_files.append(output_file)
     print("========================合成视频前处理=================================")
     inputs = []
@@ -501,9 +498,9 @@ def concatenate_videos_with_transitions(clip_infos, output_path):
         )
         current_stream = f"out{i}"  # 更新当前流为输出
     # 计算总时长
-    cut_total_duration = sum(
-        ffmpeg_util.get_video_duration(file) for file in intermediate_files
-    )
+    # cut_total_duration = sum(
+    #     ffmpeg_util.get_video_duration(file) for file in intermediate_files
+    # )
     # 步骤3：添加音频流和最终输出
     filter_script.append(
         f"aevalsrc=0:d={cut_total_duration}[aout];"
@@ -745,13 +742,10 @@ def run_ffmpeg_cmd(cmd):
 
 if __name__ == '__main__':
     import log_config
-
     # 开启日志配置
     log_config.log_run()
-
     # 总大小963GB
-    # SOURCE_FOLDER = "G:\\Walloaoer\\A\\日"
-    SOURCE_FOLDER = "G:\\Walloaoer\\动漫\\s or s"
+    SOURCE_FOLDER = "G:\\Walloaoer\\动漫\\番"
     # 备份文件夹
     BACKUP_FOLDER = "G:\\Walloaoer\\beifen"
     # 执行批量压缩

@@ -6,11 +6,6 @@ from pathlib import Path
 import logging as logger
 
 
-def get_video_duration(input_path):
-    duration, description = video_downloader.read_metadata(input_path)
-    return float(duration.strip())
-
-
 def check_cuda_support():
     # 检查ffmpeg是否支持CUDA
     cmd = ['ffmpeg', '-hwaccels']
