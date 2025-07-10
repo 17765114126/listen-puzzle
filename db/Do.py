@@ -12,21 +12,6 @@ class BaseReq(BaseModel):
         extra = 'allow'  # 允许额外的字段
 
 
-class ChatHistory(BaseModel):
-    table_name: str = "chat_history"
-    id: Optional[int] = None
-    introduce: Optional[str] = None
-    content: Optional[str] = None
-    user_id: Optional[int] = None
-
-
-class ChatRole(BaseModel):
-    table_name: str = "chat_role"
-    id: Optional[int] = None
-    role_name: Optional[str] = None
-    role_setting: Optional[str] = None
-
-
 class VideoSource(BaseModel):
     table_name: str = "video_source"
     id: Optional[int] = None
@@ -37,6 +22,15 @@ class VideoSource(BaseModel):
     duration_hms: Optional[str] = None
     description: Optional[str] = None
     video_type: Optional[bool] = 0
+
+
+class AudioSource(BaseModel):
+    table_name: str = "audio_source"
+    id: Optional[int] = None
+    audio_name: Optional[str] = None
+    prompt_text: Optional[str] = None
+    web_path: Optional[str] = None
+    local_path: Optional[str] = None
 
 
 def test_nltk():

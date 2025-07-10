@@ -1,7 +1,6 @@
 import translators as ts
 
 import config
-from api import digital_human
 
 
 # 搜索引擎

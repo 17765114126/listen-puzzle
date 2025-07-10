@@ -1,38 +1,11 @@
 from data import use_llm, use_ffmpeg, prompt_config, video_downloader
-from util import string_util, file_util
+from util import string_util
 import config
 from fastapi import APIRouter
-from db.Do import BaseReq, we_library, VideoSource
+from db.Do import BaseReq, we_library
 import logging as logger
 
 router = APIRouter()
-
-
-@router.post("/get_source_videos")
-def get_source_videos(req: BaseReq):
-    # 获取素材库素材
-    return we_library.fetch_all(f"SELECT * FROM video_source WHERE video_type=?;",
-                                (req.video_type,))
-
-
-@router.post("/update_video_source")
-def update_video_description(req: VideoSource):
-    # 修改
-    return we_library.add_or_update(req, req.table_name)
-
-
-@router.post("/del_source_videos")
-def del_source_videos(req: BaseReq):
-    # 删除本地素材
-    video_source = we_library.fetch_one(f"SELECT * FROM video_source WHERE id=?;", (req.id,))
-    file_util.del_file(video_source['local_path'])
-    return we_library.execute_query("DELETE FROM video_source WHERE id=?;", (req.id,))
-
-
-# @router.post("/del_all_source_videos")
-# def del_source_videos():
-#     # 删除全部本地素材
-#     return file_util.del_file(config.source_videos_dir)
 
 
 @router.post("/llm_get_source")
