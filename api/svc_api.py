@@ -13,16 +13,6 @@ router = APIRouter()
 def get_source_audio():
     # 获取已存在本地素材
     return we_library.fetch_all(f"SELECT * FROM audio_source")
-    # save_dir = config.ROOT_DIR_WIN / config.source_audios_dir
-    # folder_file_names = file_util.get_folder_file_name(save_dir)
-    # source_infos = []
-    # for folder_file_name in folder_file_names:
-    #     source_info = {
-    #         "source_name": folder_file_name,
-    #         "source_url": f"{config.source_audios_dir}{folder_file_name}"
-    #     }
-    #     source_infos.append(source_info)
-    # return source_infos
 
 
 @router.post("/del_source_audio")
@@ -31,7 +21,6 @@ def del_source_audio(req: BaseReq):
     video_source = we_library.fetch_one(f"SELECT * FROM audio_source WHERE id=?;", (req.id,))
     file_util.del_file(video_source['local_path'])
     return we_library.execute_query("DELETE FROM audio_source WHERE id=?;", (req.id,))
-    # return file_util.del_file(config.source_audios_dir + req.source_url)
 
 
 # 保存音色
@@ -44,9 +33,6 @@ async def save_timbre(req: AudioSource):
 
     req.web_path = f"{config.source_audios_dir}{req.audio_name}{suffix}"
     req.local_path = str(access_url_path)
-    print(f"table_name type: {type(req.table_name)}")
-    print(f"web_path type: {type(req.web_path)}")
-    print(f"local_path type: {type(req.local_path)}")
     we_library.add_or_update(req, req.table_name)
     return True
 

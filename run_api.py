@@ -41,6 +41,10 @@ app.add_middleware(
 # 启动命令（必须在主类目录下）：uvicorn run_api:app --reload
 # 访问地址：http://127.0.0.1:8686
 # 自动动生成交互式 API 文档，访问地址： http://127.0.0.1:8686/docs
+
+# 列出已安装包：pip freeze
+# 生成一个 requirements.txt，在项目根目录下运行：pipreqs . --use-local --encoding=utf8
+# pip install pipreqs
 def run():
     # 清除upload_dir
     file_util.clean_upload_dir(config.UPLOAD_DIR)
