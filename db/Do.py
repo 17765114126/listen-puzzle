@@ -30,25 +30,8 @@ class AudioSource(BaseModel):
     audio_name: Optional[str] = None
     prompt_text: Optional[str] = None
     web_path: Optional[str] = None
-    local_path: Optional[str] = None
-
-
-def test_nltk():
-    # 问题：语音克隆英文转换报错
-    import nltk
-    # nltk.download("punkt_tab")
-    # nltk.download('averaged_perceptron_tagger_eng')
-    # 直接下载网络太慢
-    # 手动下载（需要手动解压 win地址：C:\Users\1\AppData\Roaming\nltk_data）
-    # https://raw.githubusercontent.com/nltk/nltk_data/gh-pages/packages/taggers/averaged_perceptron_tagger_eng.zip
-    # https://raw.githubusercontent.com/nltk/nltk_data/gh-pages/packages/tokenizers/punkt_tab.zip
-
-    sample_text = "This is a test sentence."
-    tokens = nltk.word_tokenize(sample_text)
-    tags = nltk.pos_tag(tokens)
-    print("NLTK配置成功！")
-    print("词性标注结果:", tags)
-
-
-if __name__ == '__main__':
-    test_nltk()
+    seed: Optional[int] = None
+    speed: Optional[float] = None
+    top_p: Optional[float] = None
+    temperature: Optional[float] = None
+    repetition_penalty: Optional[float] = None

@@ -1,39 +1,65 @@
-from fastapi import APIRouter
+from fastapi import APIRouter,UploadFile,Form,File
 import soundfile as sf
-import shutil
 from data import dh_live
 from util import string_util, file_util
 import config
 from db.Do import BaseReq, AudioSource, we_library
+import os
+import uuid
 
 router = APIRouter()
 
 
 @router.post("/get_source_audio")
 def get_source_audio():
-    # 获取已存在本地素材
-    return we_library.fetch_all(f"SELECT * FROM audio_source")
+    # 获取音色列表
+    all_files = we_library.fetch_all(f"SELECT * FROM audio_source")
+    for file in all_files:
+        file["web_path"] = os.path.join(config.source_audios_dir, file.get("web_path"))
+    return all_files
 
 
 @router.post("/del_source_audio")
 def del_source_audio(req: BaseReq):
-    # 删除本地素材
+    # 删除音色
     video_source = we_library.fetch_one(f"SELECT * FROM audio_source WHERE id=?;", (req.id,))
-    file_util.del_file(video_source['local_path'])
+    web_path = os.path.join(config.ROOT_DIR_WIN, config.source_audios_dir, video_source.get("web_path"))
+    file_util.del_file(web_path)
     return we_library.execute_query("DELETE FROM audio_source WHERE id=?;", (req.id,))
 
 
 # 保存音色
 @router.post("/save_timbre")
-async def save_timbre(req: AudioSource):
-    suffix = file_util.get_file_suffix(req.local_path)
-    access_url_path = config.ROOT_DIR_WIN / config.source_audios_dir / f"{req.audio_name}{suffix}"
+async def save_timbre(file: UploadFile = File(...),
+                      audio_name: str = Form(...),
+                      prompt_text: str = Form(...),
+                      seed: int = Form(...),
+                      speed: float = Form(...),
+                      top_p: float = Form(...),
+                      temperature: float = Form(...),
+                      repetition_penalty: float = Form(...),
+                      output_format: str = Form(...),
+                      ):
+    filename = f"{uuid.uuid4().hex}.{output_format}"
+    web_path = os.path.join(config.ROOT_DIR_WIN,config.source_audios_dir, filename)
+    # 分块写入文件（适合大文件）
+    with open(web_path, "wb") as buffer:
+        while content := await file.read(1024 * 1024):  # 每次读取1MB
+            buffer.write(content)
 
-    shutil.copy2(req.local_path, access_url_path)
-
-    req.web_path = f"{config.source_audios_dir}{req.audio_name}{suffix}"
-    req.local_path = str(access_url_path)
-    we_library.add_or_update(req, req.table_name)
+    # 插入数据库记录
+    do_files = AudioSource(
+        table_name="audio_source",  # 直接初始化字段值
+        audio_name=audio_name,
+        prompt_text=prompt_text,
+        web_path=filename,
+        seed=seed,
+        speed=speed,
+        top_p=top_p,
+        temperature=temperature,
+        repetition_penalty=repetition_penalty,
+    )
+    we_library.add_or_update(do_files, do_files.table_name)
     return True
 
 
@@ -99,3 +125,52 @@ async def merge_audio(req: BaseReq):
         "finalUrl": f"{access_url_path}{finalUrl}",
         "finalWebUrl": f"{config.UPLOAD_DIR}{finalUrl}",
     }
+
+
+from data import fish_voice
+
+
+# # 语音克隆
+@router.post("/fish_voice")
+async def fish_voice_tts_endpoint(req: BaseReq):
+    """
+      生成语音
+      :param req.text: 要合成的文本
+      :param req.seed: 随机种子
+      :param req.speed_factor: 语速因子 (1.0为正常语速)
+      :param req.output_format: 输出格式 (wav/pcm/mp3)
+      :param req.top_p: 采样概率阈值 (控制生成多样性)
+      :param req.temperature: 温度参数 (控制随机性)
+      :param req.repetition_penalty: 重复惩罚因子 (避免重复)
+      :param req.references_audio: 参考音频(base64编码的音频字符串)
+      :param req.references_text: 参考音频文本
+      """
+    references  = []
+    output_format = "wav"
+    if req.audio_source_id == -1:
+        if req.references_audio is not None:
+            references = [{
+                # 实际使用base64编码的音频字符串
+                "audio": req.references_audio,
+                "text": req.references_text
+            }]
+        audio_data = fish_voice.fish_voice(req.text, output_format, references, req.seed, req.speed_factor, req.top_p,
+                                           req.temperature, req.repetition_penalty)
+    else:
+        audio_source = we_library.fetch_one(f"SELECT * FROM audio_source WHERE id=?;", (req.audio_source_id,))
+        web_path = os.path.join(config.ROOT_DIR_WIN, config.source_audios_dir, audio_source.get("web_path"))
+
+        references = [{
+            # 实际使用base64编码的音频字符串
+            "audio": file_util.audio_to_base64(web_path),
+            "text": audio_source["prompt_text"]
+        }]
+        audio_data = fish_voice.fish_voice(req.text, output_format, references, audio_source["seed"],audio_source["speed"], audio_source["top_p"],
+                                           audio_source["temperature"], audio_source["repetition_penalty"])
+
+    filename = f"{uuid.uuid4().hex}.{output_format}"
+    file_path = os.path.join(config.UPLOAD_DIR, filename)
+    # 保存结果
+    with open(file_path, "wb") as f:
+        f.write(audio_data)
+    return {"webPath": file_path}

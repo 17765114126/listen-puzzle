@@ -16,7 +16,20 @@ CREATE TABLE audio_source (
     audio_name TEXT,                        -- 名称
     prompt_text TEXT,                     -- 参考文本
     web_path TEXT,                        -- web_path
-    local_path TEXT,                     -- local_path
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
     del_flag TINYINT DEFAULT 0             -- 逻辑删除
 );
+ALTER TABLE audio_source
+ADD COLUMN seed INTEGER ;  -- 随机种子参数[1-100000]
+
+ALTER TABLE audio_source
+ADD COLUMN speed REAL;  -- 默认速度因子
+
+ALTER TABLE audio_source
+ADD COLUMN top_p REAL; -- 默认top_p采样
+
+ALTER TABLE audio_source
+ADD COLUMN temperature REAL; -- 默认温度参数
+
+ALTER TABLE audio_source
+ADD COLUMN repetition_penalty REAL; -- 默认重复惩罚因子

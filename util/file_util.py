@@ -3,7 +3,7 @@ import subprocess
 import re
 import shutil
 import ast
-
+import base64
 
 def format_windows_path(path):
     """安全格式化 Windows 路径"""
@@ -187,3 +187,15 @@ def update_value(key: str, value):
     except FileNotFoundError:
         with open('config.py', 'w') as f:
             f.write(f"{key} = {repr(value)}")
+
+
+def audio_to_base64(file_path: str) -> str:
+    """
+    将音频文件转换为 Base64 编码的字符串
+
+    :param file_path: 音频文件路径
+    :return: Base64 编码的字符串
+    """
+    with open(file_path, "rb") as audio_file:
+        audio_data = audio_file.read()
+        return base64.b64encode(audio_data).decode("utf-8")

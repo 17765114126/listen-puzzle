@@ -197,8 +197,6 @@ def download_video(video_info):
         for chunk in response.iter_content(chunk_size=8192):
             if chunk:
                 f.write(chunk)
-    # 解析视频具体内容
-    video_analyse_result = use_video_analyse.video_analyze(filepath)
     # 创建 VideoSource 实例
     video_source = VideoSource(
         table_name="video_source",
@@ -207,7 +205,6 @@ def download_video(video_info):
         local_path=filepath,
         duration=str(video_info['duration']),
         duration_hms=video_info["duration_hms"],
-        description=video_analyse_result[0].get("description"),
     )
     we_library.add_or_update(video_source, video_source.table_name)
     print(f"已下载：{filename}")
